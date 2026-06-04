@@ -26,6 +26,8 @@ class MatchModel {
   final LeagueSummary league;
   final String homeTeam;
   final String awayTeam;
+  final int? homeTeamId;
+  final int? awayTeamId;
   final DateTime kickoff;
   final String? venue;
   final String status;
@@ -40,6 +42,8 @@ class MatchModel {
     required this.league,
     required this.homeTeam,
     required this.awayTeam,
+    this.homeTeamId,
+    this.awayTeamId,
     required this.kickoff,
     this.venue,
     required this.status,
@@ -55,6 +59,8 @@ class MatchModel {
         league: LeagueSummary.fromJson(j['league']),
         homeTeam: j['home_team'],
         awayTeam: j['away_team'],
+        homeTeamId: j['home_team_id'] as int?,
+        awayTeamId: j['away_team_id'] as int?,
         kickoff: DateTime.parse(j['kickoff']).toLocal(),
         venue: j['venue'],
         status: j['status'],
