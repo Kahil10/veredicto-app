@@ -125,6 +125,14 @@ class PredictionCard extends StatelessWidget {
               _H2HSection(pred: pred),
             ],
 
+            // Ponches del pitcher (solo béisbol)
+            if (isBaseball && (pred.homeKLine != null || pred.awayKLine != null)) ...[
+              const SizedBox(height: 18),
+              const Divider(color: Color(0xFF2d2d4e)),
+              const SizedBox(height: 14),
+              _PoncheSection(pred: pred),
+            ],
+
             // Over/Under (solo béisbol)
             if (isBaseball && pred.ouLine != null) ...[
               const SizedBox(height: 18),
@@ -657,6 +665,178 @@ class _H2HSection extends StatelessWidget {
           ),
         ]),
       ],
+    );
+  }
+}
+
+// ── Ponches del Pitcher ──────────────────────────────────────────────────────
+
+class _PoncheSection extends StatelessWidget {
+  final PredictionModel pred;
+  const _PoncheSection({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Cabecera
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8b5cf6).withAlpha(30),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.sports_baseball, color: Color(0xFF8b5cf6), size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Ponches del Pitcher',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              Text('Prop bet — strikeouts del abridor',
+                  style: TextStyle(color: kMuted, fontSize: 10)),
+            ],
+          ),
+        ]),
+        const SizedBox(height: 14),
+
+        // Tarjetas de cada pitcher
+        if (pred.homeKLine != null)
+          _PoncheRow(
+            label: home,
+            pitcherName: pred.homePitcherName,
+            mu: pred.homeKMu!,
+            line: pred.homeKLine!,
+            overPct: pred.homeKOverPct!,
+            underPct: pred.homeKUnderPct!,
+          ),
+        if (pred.homeKLine != null && pred.awayKLine != null)
+          const SizedBox(height: 10),
+        if (pred.awayKLine != null)
+          _PoncheRow(
+            label: away,
+            pitcherName: pred.awayPitcherName,
+            mu: pred.awayKMu!,
+            line: pred.awayKLine!,
+            overPct: pred.awayKOverPct!,
+            underPct: pred.awayKUnderPct!,
+          ),
+      ],
+    );
+  }
+}
+
+class _PoncheRow extends StatelessWidget {
+  final String label;
+  final String? pitcherName;
+  final double mu;
+  final double line;
+  final double overPct;
+  final double underPct;
+
+  const _PoncheRow({
+    required this.label,
+    required this.pitcherName,
+    required this.mu,
+    required this.line,
+    required this.overPct,
+    required this.underPct,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final favor = overPct >= underPct ? 'OVER' : 'UNDER';
+    final favorColor = overPct >= underPct
+        ? const Color(0xFF22c55e)
+        : const Color(0xFF0ea5e9);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1e1e3a),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2d2d4e)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(label,
+                    style: const TextStyle(color: kMuted, fontSize: 11)),
+                if (pitcherName != null)
+                  Text(pitcherName!.split(' ').last,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 14)),
+              ]),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: favorColor.withAlpha(30),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: favorColor.withAlpha(80)),
+                ),
+                child: Text('$favor ${line.toStringAsFixed(1)}',
+                    style: TextStyle(
+                        color: favorColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: Column(children: [
+              Text('OVER ${line.toStringAsFixed(1)}',
+                  style: const TextStyle(color: kMuted, fontSize: 10)),
+              const SizedBox(height: 4),
+              LinearProgressIndicator(
+                value: overPct / 100,
+                backgroundColor: const Color(0xFF2d2d4e),
+                color: const Color(0xFF22c55e),
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              const SizedBox(height: 4),
+              Text('${overPct.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                      color: Color(0xFF22c55e),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ])),
+            const SizedBox(width: 12),
+            Expanded(child: Column(children: [
+              Text('UNDER ${line.toStringAsFixed(1)}',
+                  style: const TextStyle(color: kMuted, fontSize: 10)),
+              const SizedBox(height: 4),
+              LinearProgressIndicator(
+                value: underPct / 100,
+                backgroundColor: const Color(0xFF2d2d4e),
+                color: const Color(0xFF0ea5e9),
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              const SizedBox(height: 4),
+              Text('${underPct.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                      color: Color(0xFF0ea5e9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ])),
+          ]),
+          const SizedBox(height: 6),
+          Text('Promedio histórico: $mu K/juego',
+              style: const TextStyle(color: kMuted, fontSize: 10)),
+        ],
+      ),
     );
   }
 }

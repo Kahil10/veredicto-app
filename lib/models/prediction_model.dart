@@ -33,6 +33,16 @@ class PredictionModel {
   final double? h2hRunsLocalAvg;
   final double? h2hRunsVisitAvg;
 
+  // Ponches del pitcher
+  final double? homeKMu;
+  final double? homeKLine;
+  final double? homeKOverPct;
+  final double? homeKUnderPct;
+  final double? awayKMu;
+  final double? awayKLine;
+  final double? awayKOverPct;
+  final double? awayKUnderPct;
+
   final List<String> variablesUsadas;
   final List<String> variablesFaltantes;
 
@@ -62,6 +72,14 @@ class PredictionModel {
     this.h2hVictoriasVisit,
     this.h2hRunsLocalAvg,
     this.h2hRunsVisitAvg,
+    this.homeKMu,
+    this.homeKLine,
+    this.homeKOverPct,
+    this.homeKUnderPct,
+    this.awayKMu,
+    this.awayKLine,
+    this.awayKOverPct,
+    this.awayKUnderPct,
     required this.variablesUsadas,
     required this.variablesFaltantes,
   });
@@ -92,6 +110,14 @@ class PredictionModel {
         h2hVictoriasVisit:  j['h2h_victorias_visit'] as int?,
         h2hRunsLocalAvg:    (j['h2h_runs_local_avg'] as num?)?.toDouble(),
         h2hRunsVisitAvg:    (j['h2h_runs_visit_avg'] as num?)?.toDouble(),
+        homeKMu:        (j['home_k_mu']        as num?)?.toDouble(),
+        homeKLine:      (j['home_k_line']       as num?)?.toDouble(),
+        homeKOverPct:   (j['home_k_over_pct']   as num?)?.toDouble(),
+        homeKUnderPct:  (j['home_k_under_pct']  as num?)?.toDouble(),
+        awayKMu:        (j['away_k_mu']         as num?)?.toDouble(),
+        awayKLine:      (j['away_k_line']        as num?)?.toDouble(),
+        awayKOverPct:   (j['away_k_over_pct']    as num?)?.toDouble(),
+        awayKUnderPct:  (j['away_k_under_pct']   as num?)?.toDouble(),
         variablesUsadas: List<String>.from(j['variables_usadas'] ?? []),
         variablesFaltantes: List<String>.from(j['variables_faltantes'] ?? []),
       );
