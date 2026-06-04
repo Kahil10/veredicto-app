@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
+import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../models/prediction_model.dart';
+import '../providers/auth_provider.dart';
+import '../screens/pro_analysis_screen.dart';
 
 // ── Logo del equipo MLB ───────────────────────────────────────────────────────
 
@@ -97,6 +100,10 @@ class PredictionCard extends StatelessWidget {
 
         // Barra de confianza
         _ConfidenceBar(pred: pred),
+        const SizedBox(height: 10),
+
+        // Botón Análisis Pro
+        _ProButton(pred: pred),
         const SizedBox(height: 12),
 
         // Pitchers
@@ -975,6 +982,107 @@ class _Tag extends StatelessWidget {
           style: GoogleFonts.jetBrainsMono(
               fontSize: 9, fontWeight: FontWeight.w700,
               color: textColor, letterSpacing: 1.5)),
+    );
+  }
+}
+
+// ── Botón Análisis Pro ────────────────────────────────────────────────────────
+
+class _ProButton extends StatelessWidget {
+  final PredictionModel pred;
+  const _ProButton({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final user      = context.watch<AuthProvider>().user;
+    final isPremium = user?.isPremiumActive == true ||
+        (user?.role.toLowerCase() == 'admin');
+
+    if (!isPremium) {
+      // FREE: botón bloqueado como gancho de conversión
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kAccent.withAlpha(30)),
+        ),
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: kAccent.withAlpha(20),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('🔥', style: TextStyle(fontSize: 20)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('ANÁLISIS PRO',
+                style: GoogleFonts.bebasNeue(
+                    fontSize: 16, color: kAccent.withAlpha(150), letterSpacing: 1.5)),
+            Text('MLB Stats API · Clima · IA Narrativa · Picks',
+                style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+          ])),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: kGold.withAlpha(25),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: kGold.withAlpha(60)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.lock_outline, color: kGold, size: 12),
+              const SizedBox(width: 4),
+              Text('PREMIUM',
+                  style: GoogleFonts.jetBrainsMono(
+                      fontSize: 9, color: kGold, fontWeight: FontWeight.w700, letterSpacing: 1)),
+            ]),
+          ),
+        ]),
+      );
+    }
+
+    // PREMIUM: botón activo
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProAnalysisScreen(match: pred.match, pred: pred),
+        ),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [
+            kAccent.withAlpha(25),
+            kAccent3.withAlpha(15),
+          ]),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kAccent.withAlpha(70)),
+        ),
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: kAccent.withAlpha(30),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('🔥', style: TextStyle(fontSize: 20)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('ANÁLISIS PRO',
+                style: GoogleFonts.bebasNeue(
+                    fontSize: 16, color: kAccent, letterSpacing: 1.5)),
+            Text('MLB Stats API · Clima · IA Narrativa · Picks',
+                style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+          ])),
+          const Icon(Icons.arrow_forward_ios, color: kAccent, size: 14),
+        ]),
+      ),
     );
   }
 }
