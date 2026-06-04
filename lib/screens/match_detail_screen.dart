@@ -9,6 +9,7 @@ import '../core/theme.dart';
 import '../models/match_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
+import '../models/prediction_model.dart';
 import '../providers/matches_provider.dart';
 import '../widgets/prediction_card.dart';
 import 'chat_screen.dart';
@@ -102,16 +103,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
         onPressed: () {
           final pred = provider.prediction(match.id);
-          final status = match.isLive
-              ? 'EN VIVO ${match.homeScore ?? 0}-${match.awayScore ?? 0}'
-              : match.isFinished
-                  ? 'Finalizado ${match.homeScore ?? 0}-${match.awayScore ?? 0}'
-                  : 'Sin comenzar';
-          final predText = pred != null
-              ? ', análisis: ${pred.homeWinPct.toStringAsFixed(1)}% ${match.homeTeam}'
-              : '';
-          final ctx =
-              '${match.homeTeam} vs ${match.awayTeam}, $status$predText';
+          final ctx = _buildVeraContext(match, pred);
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -443,4 +435,100 @@ class _BenefitRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Contexto rico para Vera IA ────────────────────────────────────────────────
+
+String _buildVeraContext(MatchModel match, PredictionModel? pred) {
+  final buf = StringBuffer();
+
+  // Cabecera del partido
+  final status = match.isLive
+      ? 'EN VIVO ${match.homeScore ?? 0}-${match.awayScore ?? 0}'
+      : match.isFinished
+          ? 'Finalizado ${match.homeScore ?? 0}-${match.awayScore ?? 0}'
+          : 'Sin comenzar';
+
+  buf.writeln('=== DATOS DEL MOTOR VEREDICTO ===');
+  buf.writeln('Partido: ${match.homeTeam} vs ${match.awayTeam}');
+  buf.writeln('Liga: ${match.league.name} | Deporte: ${match.sport}');
+  buf.writeln('Estado: $status');
+  if (match.venue != null) buf.writeln('Estadio: ${match.venue}');
+  buf.writeln();
+
+  if (pred == null) {
+    buf.writeln('(Predicción no generada aún)');
+    return buf.toString();
+  }
+
+  // Probabilidades
+  buf.writeln('--- PROBABILIDADES ---');
+  buf.writeln('${match.homeTeam}: ${pred.homeWinPct.toStringAsFixed(1)}%');
+  if (pred.drawPct > 0) buf.writeln('Empate: ${pred.drawPct.toStringAsFixed(1)}%');
+  buf.writeln('${match.awayTeam}: ${pred.awayWinPct.toStringAsFixed(1)}%');
+  buf.writeln('xC local: ${pred.homeXg.toStringAsFixed(2)} carreras esperadas');
+  buf.writeln('xC visitante: ${pred.awayXg.toStringAsFixed(2)} carreras esperadas');
+  buf.writeln('Confianza del motor: ${pred.confidence}% (${pred.confidenceLabel})');
+  buf.writeln();
+
+  // Pitchers
+  if (pred.homePitcherName != null || pred.awayPitcherName != null) {
+    buf.writeln('--- PITCHERS TITULARES ---');
+    if (pred.homePitcherName != null) {
+      buf.write('Local — ${pred.homePitcherName}');
+      if (pred.homePitcherEra != null) buf.write(' | ERA: ${pred.homePitcherEra!.toStringAsFixed(2)}');
+      if (pred.homePitcherK9 != null) buf.write(' | K/jgo: ${pred.homePitcherK9!.toStringAsFixed(1)}');
+      buf.writeln();
+    }
+    if (pred.awayPitcherName != null) {
+      buf.write('Visitante — ${pred.awayPitcherName}');
+      if (pred.awayPitcherEra != null) buf.write(' | ERA: ${pred.awayPitcherEra!.toStringAsFixed(2)}');
+      if (pred.awayPitcherK9 != null) buf.write(' | K/jgo: ${pred.awayPitcherK9!.toStringAsFixed(1)}');
+      buf.writeln();
+    }
+    buf.writeln();
+  }
+
+  // H2H
+  if ((pred.h2hJuegos ?? 0) >= 2) {
+    buf.writeln('--- HEAD-TO-HEAD (últimos ${pred.h2hJuegos} enfrentamientos) ---');
+    buf.writeln('${match.homeTeam}: ${pred.h2hVictoriasLocal ?? 0} victorias | ${(pred.h2hRunsLocalAvg ?? 0).toStringAsFixed(1)} C/jgo promedio');
+    buf.writeln('${match.awayTeam}: ${pred.h2hVictoriasVisit ?? 0} victorias | ${(pred.h2hRunsVisitAvg ?? 0).toStringAsFixed(1)} C/jgo promedio');
+    buf.writeln();
+  }
+
+  // O/U
+  if (pred.ouLine != null) {
+    buf.writeln('--- OVER/UNDER ---');
+    buf.writeln('Línea: ${pred.ouLine} carreras totales');
+    buf.writeln('OVER: ${pred.overPct?.toStringAsFixed(1) ?? "—"}%');
+    buf.writeln('UNDER: ${pred.underPct?.toStringAsFixed(1) ?? "—"}%');
+    if (pred.projectedTotal != null) {
+      buf.writeln('Proyectado por el motor: ${pred.projectedTotal!.toStringAsFixed(1)} carreras');
+    }
+    buf.writeln();
+  }
+
+  // Ponches
+  if (pred.homeKLine != null || pred.awayKLine != null) {
+    buf.writeln('--- PONCHES DEL PITCHER (prop bet) ---');
+    if (pred.homeKLine != null) {
+      buf.writeln('${pred.homePitcherName ?? match.homeTeam}: línea ${pred.homeKLine} Ks | OVER ${pred.homeKOverPct?.toStringAsFixed(1)}% | UNDER ${pred.homeKUnderPct?.toStringAsFixed(1)}% | prom. ${pred.homeKMu} K/jgo');
+    }
+    if (pred.awayKLine != null) {
+      buf.writeln('${pred.awayPitcherName ?? match.awayTeam}: línea ${pred.awayKLine} Ks | OVER ${pred.awayKOverPct?.toStringAsFixed(1)}% | UNDER ${pred.awayKUnderPct?.toStringAsFixed(1)}% | prom. ${pred.awayKMu} K/jgo');
+    }
+    buf.writeln();
+  }
+
+  // Datos usados
+  if (pred.variablesUsadas.isNotEmpty) {
+    buf.writeln('--- DATOS UTILIZADOS POR EL MOTOR ---');
+    for (final v in pred.variablesUsadas) {
+      buf.writeln('· $v');
+    }
+  }
+
+  buf.writeln('=================================');
+  return buf.toString();
 }
