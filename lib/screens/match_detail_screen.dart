@@ -12,6 +12,7 @@ import '../providers/chat_provider.dart';
 import '../models/prediction_model.dart';
 import '../providers/matches_provider.dart';
 import '../widgets/prediction_card.dart';
+import '../widgets/live_game_widget.dart';
 import 'chat_screen.dart';
 
 class MatchDetailScreen extends StatefulWidget {
@@ -121,6 +122,11 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           children: [
             _MatchHeader(match),
             const SizedBox(height: 16),
+            // ── Vista en vivo (solo béisbol en curso) ──────────────────────
+            if (match.isLive && match.sport == 'baseball') ...[
+              LiveGameWidget(match: match, token: auth.token),
+              const SizedBox(height: 16),
+            ],
             if (isPaywalled)
               const _PaywallCard()
             else if (isPredLoading)
