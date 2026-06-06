@@ -49,6 +49,8 @@ class _LiveGameWidgetState extends State<LiveGameWidget> {
           _data = jsonDecode(resp.body) as Map<String, dynamic>;
           _loading = false;
         });
+      } else if (mounted) {
+        setState(() => _loading = false);
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);

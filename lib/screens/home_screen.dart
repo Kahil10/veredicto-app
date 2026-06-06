@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/matches_provider.dart';
 import '../widgets/match_card.dart';
 import 'chat_screen.dart';
+import 'live_games_screen.dart';
 import 'match_detail_screen.dart';
 import 'profile_screen.dart';
 
@@ -32,21 +33,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _tab,
-        children: const [_MatchesTab(), ChatScreen(), ProfileScreen()],
+        children: const [
+          _MatchesTab(),
+          LiveGamesScreen(),
+          ChatScreen(),
+          ProfileScreen(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tab,
         onTap: (i) => setState(() => _tab = i),
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
               icon: Icon(Icons.sports_baseball_outlined),
               activeIcon: Icon(Icons.sports_baseball),
               label: 'Partidos'),
           BottomNavigationBarItem(
+              icon: _LiveTabIcon(active: _tab == 1),
+              label: 'En Vivo'),
+          const BottomNavigationBarItem(
               icon: Icon(Icons.auto_awesome_outlined),
               activeIcon: Icon(Icons.auto_awesome),
               label: 'Vera'),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
               label: 'Perfil'),
@@ -55,6 +64,69 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+// ── Ícono del tab En Vivo con punto verde pulsante ────────────────────────────
+
+class _LiveTabIcon extends StatefulWidget {
+  final bool active;
+  const _LiveTabIcon({required this.active});
+
+  @override
+  State<_LiveTabIcon> createState() => _LiveTabIconState();
+}
+
+class _LiveTabIconState extends State<_LiveTabIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.3, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(
+          widget.active ? Icons.play_circle : Icons.play_circle_outline,
+          color: widget.active ? kAccent : null,
+        ),
+        Positioned(
+          top: -2,
+          right: -4,
+          child: AnimatedBuilder(
+            animation: _anim,
+            builder: (_, __) => Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF22c55e).withValues(alpha: _anim.value),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _MatchesTab extends StatelessWidget {
   const _MatchesTab();
