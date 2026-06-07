@@ -20,6 +20,8 @@ class _TeamLogo extends StatelessWidget {
   final bool isFootball;
   final String? crestUrl;
   final String sport;
+  // Para LVBP y fútbol venezolano: usar Image.network con crestUrl (PNG de TheSportsDB)
+  final bool useNetworkLogo;
 
   const _TeamLogo({
     required this.teamId,
@@ -29,6 +31,7 @@ class _TeamLogo extends StatelessWidget {
     this.isFootball = false,
     this.crestUrl,
     this.sport = 'baseball',
+    this.useNetworkLogo = false,
   });
 
   @override
@@ -37,11 +40,22 @@ class _TeamLogo extends StatelessWidget {
 
     Widget logoChild;
     if (flagUrl != null) {
-      // Fútbol: bandera PNG de flagcdn.com
+      // Fútbol internacional: bandera PNG de flagcdn.com
       logoChild = ClipOval(
         child: Image.network(
           flagUrl,
           fit: BoxFit.cover,
+          loadingBuilder: (_, child, prog) =>
+              prog == null ? child : _initials(teamName, size),
+          errorBuilder: (_, __, ___) => _initials(teamName, size),
+        ),
+      );
+    } else if (useNetworkLogo && crestUrl != null) {
+      // LVBP / Fútbol VEN: logo PNG desde TheSportsDB
+      logoChild = ClipOval(
+        child: Image.network(
+          crestUrl!,
+          fit: BoxFit.contain,
           loadingBuilder: (_, child, prog) =>
               prog == null ? child : _initials(teamName, size),
           errorBuilder: (_, __, ___) => _initials(teamName, size),
@@ -128,15 +142,20 @@ class PredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final match      = pred.match;
-    final isBaseball = match.sport == 'baseball';
+    final match        = pred.match;
+    final isBaseball   = match.sport == 'baseball';
     final isBasketball = match.sport == 'basketball';
-    final isNFL      = match.sport == 'american_football';
+    final isNFL        = match.sport == 'american_football';
+    final isLVBP       = match.sport == 'baseball_lvbp';
+    final isFootballVen = match.sport == 'football_ven';
+
+    // Grupos semánticos para reutilizar lógica
+    final isBaseballLike = isBaseball || isLVBP;
 
     // Etiqueta O/U adaptada por deporte
     final String ouUnit = (isBasketball || isNFL)
         ? 'puntos'
-        : isBaseball
+        : isBaseballLike
             ? 'carreras'
             : 'goles';
 
@@ -154,8 +173,8 @@ class PredictionCard extends StatelessWidget {
         _ProButton(pred: pred, match: match),
         const SizedBox(height: 12),
 
-        // Pitchers (solo béisbol)
-        if (isBaseball && pred.homePitcherName != null) ...[
+        // Pitchers (solo béisbol / LVBP)
+        if (isBaseballLike && pred.homePitcherName != null) ...[
           _SectionCard(
             icon: '⚾',
             iconColor: const Color(0xFFe8ff3a),
@@ -166,8 +185,8 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Head-to-Head (solo béisbol)
-        if (isBaseball && (pred.h2hJuegos ?? 0) >= 2) ...[
+        // Head-to-Head (solo béisbol / LVBP)
+        if (isBaseballLike && (pred.h2hJuegos ?? 0) >= 2) ...[
           _SectionCard(
             icon: '📊',
             iconColor: kGold,
@@ -178,8 +197,8 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Ponches (solo béisbol)
-        if (isBaseball && (pred.homeKLine != null || pred.awayKLine != null)) ...[
+        // Ponches (solo béisbol / LVBP)
+        if (isBaseballLike && (pred.homeKLine != null || pred.awayKLine != null)) ...[
           _SectionCard(
             icon: '🎯',
             iconColor: kAccent3,
@@ -217,33 +236,40 @@ class _HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final match  = pred.match;
-    final isBaseball = match.sport == 'baseball';
+    final match       = pred.match;
+    final isBaseball  = match.sport == 'baseball';
     final isBasketball = match.sport == 'basketball';
-    final isNFL  = match.sport == 'american_football';
-    final noDraw = isBasketball || isNFL;
+    final isNFL       = match.sport == 'american_football';
+    final isLVBP      = match.sport == 'baseball_lvbp';
+    final isBaseballLike = isBaseball || isLVBP;
+    // LVBP es béisbol → sin empate; fútbol venezolano → con empate (igual que fútbol)
+    final noDraw = isBasketball || isNFL || isLVBP;
     final home   = match.homeTeam;
     final away   = match.awayTeam;
-    // Para béisbol: separar ciudad del nombre del equipo (ej. "New York" / "Yankees")
+    // Para béisbol/LVBP: separar ciudad del nombre del equipo
     // Para fútbol/basketball/NFL: mostrar nombre completo
     final homeParts = home.split(' ');
     final awayParts = away.split(' ');
-    final homeCity = isBaseball && homeParts.length > 1 ? homeParts.sublist(0, homeParts.length - 1).join(' ') : '';
-    final homeTeam = isBaseball ? homeParts.last : home;
-    final awayCity = isBaseball && awayParts.length > 1 ? awayParts.sublist(0, awayParts.length - 1).join(' ') : '';
-    final awayTeam = isBaseball ? awayParts.last : away;
+    final homeCity = isBaseballLike && homeParts.length > 1 ? homeParts.sublist(0, homeParts.length - 1).join(' ') : '';
+    final homeTeam = isBaseballLike ? homeParts.last : home;
+    final awayCity = isBaseballLike && awayParts.length > 1 ? awayParts.sublist(0, awayParts.length - 1).join(' ') : '';
+    final awayTeam = isBaseballLike ? awayParts.last : away;
 
     // Etiqueta del tag superior según deporte
     final String sportTag = isBaseball
         ? '⚾ MLB · ANÁLISIS ÉLITE'
-        : isBasketball
-            ? '🏀 NBA · ANÁLISIS ÉLITE'
-            : isNFL
-                ? '🏈 NFL · ANÁLISIS ÉLITE'
-                : '⚽ Fútbol · ANÁLISIS ÉLITE';
+        : isLVBP
+            ? '⚾ LVBP · ANÁLISIS ÉLITE'
+            : isBasketball
+                ? '🏀 NBA · ANÁLISIS ÉLITE'
+                : isNFL
+                    ? '🏈 NFL · ANÁLISIS ÉLITE'
+                    : match.sport == 'football_ven'
+                        ? '🇻🇪 Fútbol VEN · ANÁLISIS ÉLITE'
+                        : '⚽ Fútbol · ANÁLISIS ÉLITE';
 
     // Watermark emoji
-    final String watermarkEmoji = isBaseball
+    final String watermarkEmoji = isBaseballLike
         ? '⚾'
         : isBasketball
             ? '🏀'
@@ -310,6 +336,7 @@ class _HeroSection extends StatelessWidget {
                         isFootball: match.sport == 'football',
                         crestUrl: match.homeTeamCrest,
                         sport: match.sport,
+                        useNetworkLogo: isLVBP || match.sport == 'football_ven',
                       ),
                       const SizedBox(height: 8),
                       Text(homeCity.toUpperCase(),
@@ -348,6 +375,7 @@ class _HeroSection extends StatelessWidget {
                         isFootball: match.sport == 'football',
                         crestUrl: match.awayTeamCrest,
                         sport: match.sport,
+                        useNetworkLogo: isLVBP || match.sport == 'football_ven',
                       ),
                       const SizedBox(height: 8),
                       Text(awayCity.toUpperCase(),

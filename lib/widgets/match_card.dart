@@ -107,6 +107,8 @@ class _TeamColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNBAorNFL =
         sport == 'basketball' || sport == 'american_football';
+    final isTheSportsDB =
+        sport == 'baseball_lvbp' || sport == 'football_ven';
     final flagUrl = sport == 'football' ? footballFlagUrl(name) : null;
 
     return Column(
@@ -132,6 +134,20 @@ class _TeamColumn extends StatelessWidget {
           ),
         // NBA / NFL: crest PNG desde ESPN CDN
         if (isNBAorNFL && crestUrl != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Image.network(
+              crestUrl!,
+              width: 36,
+              height: 36,
+              fit: BoxFit.contain,
+              loadingBuilder: (_, child, prog) =>
+                  prog == null ? child : const SizedBox(width: 36, height: 36),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+        // LVBP / Fútbol VEN: logo PNG desde TheSportsDB
+        if (isTheSportsDB && crestUrl != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Image.network(
@@ -278,6 +294,10 @@ class _SportChip extends StatelessWidget {
         emoji = '⚾';
         chipColor = const Color(0xFF0ea5e9);
         break;
+      case 'baseball_lvbp':
+        emoji = '⚾';
+        chipColor = const Color(0xFFFFAA00);
+        break;
       case 'basketball':
         emoji = '🏀';
         chipColor = const Color(0xFFf97316);
@@ -285,6 +305,10 @@ class _SportChip extends StatelessWidget {
       case 'american_football':
         emoji = '🏈';
         chipColor = const Color(0xFF8b5cf6);
+        break;
+      case 'football_ven':
+        emoji = '🇻🇪';
+        chipColor = const Color(0xFF0066CC);
         break;
       default:
         emoji = '⚽';

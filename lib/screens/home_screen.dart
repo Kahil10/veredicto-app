@@ -218,28 +218,14 @@ class _ControlBar extends StatelessWidget {
                 const SizedBox(width: 6),
                 _SportTab(
                   label: '⚾ LVBP',
-                  active: false,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'LVBP — datos sincronizando, prueba mañana'),
-                      ),
-                    );
-                  },
+                  active: provider.sport == 'baseball_lvbp',
+                  onTap: () => provider.setSport('baseball_lvbp', token: token),
                 ),
                 const SizedBox(width: 6),
                 _SportTab(
-                  label: '🇻🇪 VEN',
-                  active: false,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Fútbol venezolano — datos sincronizando, prueba mañana'),
-                      ),
-                    );
-                  },
+                  label: '🇻🇪 Fútbol VEN',
+                  active: provider.sport == 'football_ven',
+                  onTap: () => provider.setSport('football_ven', token: token),
                 ),
               ],
             ),
