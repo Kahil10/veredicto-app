@@ -586,7 +586,9 @@ class _ConfidenceBarState extends State<_ConfidenceBar>
               : (widget.pred.match.sport == 'basketball' ||
                       widget.pred.match.sport == 'american_football')
                   ? 'Motor Estadístico · Temporada actual · 10,000 simulaciones'
-                  : 'Motor Bayesiano · Rankings FIFA · 10,000 simulaciones',
+                  : widget.pred.match.sport == 'football'
+                      ? 'Motor Bayesiano · Rankings FIFA · 10,000 simulaciones'
+                      : 'Motor Bayesiano · Promedio liga · 10,000 simulaciones',
           style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted),
         ),
       ]),
