@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/config.dart';
 import '../core/theme.dart';
@@ -83,6 +84,22 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                   ),
                 ),
               ),
+            ),
+          if (pred != null)
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Compartir predicción',
+              onPressed: () {
+                final isFootball = match.sport == 'football';
+                final emoji = isFootball ? '⚽' : '⚾';
+                final league = isFootball ? match.league.name : 'MLB';
+                final homePct = pred.homeWinPct.toStringAsFixed(1);
+                final awayPct = pred.awayWinPct.toStringAsFixed(1);
+                final text =
+                    '$emoji ${match.homeTeam} $homePct% vs ${match.awayTeam} $awayPct% · $league · Motor Veredicto 🔮\n'
+                    'Descarga Veredicto para más predicciones';
+                Share.share(text);
+              },
             ),
           IconButton(
             icon: const Icon(Icons.refresh),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/config.dart';
 import '../core/theme.dart';
+import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -59,7 +60,10 @@ class ProfileScreen extends StatelessWidget {
                                       color: kMuted, fontSize: 13)),
                             ),
                           const SizedBox(height: 14),
-                          _RoleBadge(role: user.role),
+                          _RoleBadge(
+                            role: user.role,
+                            isPremiumActive: user.isPremiumActive,
+                          ),
                         ],
                       ),
                     ),
@@ -112,38 +116,8 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // Créditos
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF22c55e).withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.toll_rounded,
-                                color: Color(0xFF22c55e), size: 28),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Créditos disponibles',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15)),
-                              Text('${user.credits} créditos',
-                                  style: const TextStyle(
-                                      color: kMuted, fontSize: 12)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Créditos / predicciones diarias
+                  _CreditsCard(user: user),
 
                   const SizedBox(height: 24),
 
@@ -178,12 +152,15 @@ class ProfileScreen extends StatelessWidget {
 
 class _RoleBadge extends StatelessWidget {
   final String role;
-  const _RoleBadge({required this.role});
+  final bool isPremiumActive;
+  const _RoleBadge({required this.role, required this.isPremiumActive});
 
   @override
   Widget build(BuildContext context) {
-    final isPremium = role == 'premium';
+    // isPremiumActive es la fuente de verdad — el backend puede marcar premium
+    // sin cambiar el campo role (p. ej. suscripciones con fecha de vencimiento)
     final isAdmin = role == 'admin';
+    final isPremium = isPremiumActive || role == 'premium';
     final color = isAdmin
         ? kPurple
         : isPremium
@@ -386,6 +363,124 @@ class _AdminRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(text, style: const TextStyle(color: kText, fontSize: 13)),
       ]),
+    );
+  }
+}
+
+class _CreditsCard extends StatelessWidget {
+  final UserModel user;
+  const _CreditsCard({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    // Para usuarios free mostramos el contador diario (más relevante que créditos generales)
+    final bool isFreeUser = user.isFree;
+    final int left = user.analysesLeft; // 0-2
+    final int used = user.dailyPredCount.clamp(0, 2);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22c55e).withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.toll_rounded,
+                      color: Color(0xFF22c55e), size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isFreeUser ? 'Análisis gratuitos hoy' : 'Créditos disponibles',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 15),
+                      ),
+                      if (isFreeUser)
+                        Text(
+                          '$left de 2 restantes (usados: $used)',
+                          style: TextStyle(
+                            color: left == 0
+                                ? const Color(0xFFef4444)
+                                : const Color(0xFF22c55e),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${user.credits} créditos',
+                          style: const TextStyle(color: kMuted, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+                // Indicador visual solo para usuarios free
+                if (isFreeUser)
+                  _DailyDots(left: left),
+              ],
+            ),
+            if (isFreeUser && left == 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFef4444).withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFFef4444).withAlpha(60)),
+                ),
+                child: const Text(
+                  'Límite diario alcanzado. Vuelve mañana o hazte Premium para análisis ilimitados.',
+                  style: TextStyle(
+                      color: Color(0xFFef4444),
+                      fontSize: 12,
+                      height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tres puntos que representan los 2 análisis diarios (llenos / vacíos)
+class _DailyDots extends StatelessWidget {
+  final int left;
+  const _DailyDots({required this.left});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(2, (i) {
+        final filled = i < left;
+        return Container(
+          margin: const EdgeInsets.only(left: 5),
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: filled
+                ? const Color(0xFF22c55e)
+                : const Color(0xFF22c55e).withAlpha(40),
+            shape: BoxShape.circle,
+          ),
+        );
+      }),
     );
   }
 }
