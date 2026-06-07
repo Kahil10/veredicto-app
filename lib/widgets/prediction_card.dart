@@ -36,11 +36,14 @@ class _TeamLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Solo mostrar bandera de país para selecciones nacionales (Copa del Mundo)
     final flagUrl = isFootball ? footballFlagUrl(teamName) : null;
+    // Ligas de clubes de fútbol: usar crest cuando no hay bandera nacional
+    final hasClubCrest = isFootball && flagUrl == null && crestUrl != null;
 
     Widget logoChild;
     if (flagUrl != null) {
-      // Fútbol internacional: bandera PNG de flagcdn.com
+      // Fútbol internacional (Copa del Mundo): bandera PNG de flagcdn.com
       logoChild = ClipOval(
         child: Image.network(
           flagUrl,
@@ -50,8 +53,19 @@ class _TeamLogo extends StatelessWidget {
           errorBuilder: (_, __, ___) => _initials(teamName, size),
         ),
       );
+    } else if (hasClubCrest) {
+      // Fútbol ligas de clubes (Premier, La Liga, Champions, Libertadores, etc.)
+      logoChild = ClipOval(
+        child: Image.network(
+          crestUrl!,
+          fit: BoxFit.contain,
+          loadingBuilder: (_, child, prog) =>
+              prog == null ? child : _initials(teamName, size),
+          errorBuilder: (_, __, ___) => _initials(teamName, size),
+        ),
+      );
     } else if (useNetworkLogo && crestUrl != null) {
-      // LVBP / Fútbol VEN: logo PNG desde TheSportsDB
+      // LVBP / Fútbol VEN / ligas menores: logo PNG desde TheSportsDB
       logoChild = ClipOval(
         child: Image.network(
           crestUrl!,
@@ -63,7 +77,7 @@ class _TeamLogo extends StatelessWidget {
       );
     } else if ((sport == 'basketball' || sport == 'american_football') &&
         crestUrl != null) {
-      // NBA / NFL: PNG desde ESPN CDN
+      // NBA / WNBA / NCAA Basketball / NFL / NCAA Football / CFL: PNG desde ESPN CDN
       logoChild = ClipOval(
         child: Image.network(
           crestUrl!,
@@ -73,8 +87,25 @@ class _TeamLogo extends StatelessWidget {
           errorBuilder: (_, __, ___) => _initials(teamName, size),
         ),
       );
-    } else if (!isFootball && teamId != null) {
-      // Béisbol: logo oficial MLB
+    } else if (sport == 'baseball' && crestUrl != null) {
+      // Béisbol MLB y ligas menores: SVG desde mlbstatic o URL directa del backend
+      logoChild = ClipOval(
+        child: crestUrl!.endsWith('.svg')
+            ? SvgPicture.network(
+                crestUrl!,
+                fit: BoxFit.contain,
+                placeholderBuilder: (_) => _initials(teamName, size),
+              )
+            : Image.network(
+                crestUrl!,
+                fit: BoxFit.contain,
+                loadingBuilder: (_, child, prog) =>
+                    prog == null ? child : _initials(teamName, size),
+                errorBuilder: (_, __, ___) => _initials(teamName, size),
+              ),
+      );
+    } else if (sport == 'baseball' && teamId != null) {
+      // Béisbol MLB fallback: construir URL de mlbstatic desde teamId
       logoChild = ClipOval(
         child: SvgPicture.network(
           'https://www.mlbstatic.com/team-logos/$teamId.svg',
@@ -143,14 +174,14 @@ class PredictionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match        = pred.match;
-    final isBaseball   = match.sport == 'baseball';
+    final isBaseball   = match.sport == 'baseball' || match.sport == 'baseball_lvbp';
     final isBasketball = match.sport == 'basketball';
     final isNFL        = match.sport == 'american_football';
     final isLVBP       = match.sport == 'baseball_lvbp';
     final isFootballVen = match.sport == 'football_ven';
 
     // Grupos semánticos para reutilizar lógica
-    final isBaseballLike = isBaseball || isLVBP;
+    final isBaseballLike = isBaseball; // isBaseball ya incluye LVBP
 
     // Etiqueta O/U adaptada por deporte
     final String ouUnit = (isBasketball || isNFL)
@@ -237,13 +268,13 @@ class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match       = pred.match;
-    final isBaseball  = match.sport == 'baseball';
+    final isBaseball  = match.sport == 'baseball' || match.sport == 'baseball_lvbp';
     final isBasketball = match.sport == 'basketball';
     final isNFL       = match.sport == 'american_football';
     final isLVBP      = match.sport == 'baseball_lvbp';
-    final isBaseballLike = isBaseball || isLVBP;
+    final isBaseballLike = isBaseball; // isBaseball ya incluye LVBP
     // LVBP es béisbol → sin empate; fútbol venezolano → con empate (igual que fútbol)
-    final noDraw = isBaseball || isBasketball || isNFL || isLVBP;
+    final noDraw = isBaseball || isBasketball || isNFL;
     final home   = match.homeTeam;
     final away   = match.awayTeam;
     // Para béisbol/LVBP: separar ciudad del nombre del equipo
@@ -255,18 +286,17 @@ class _HeroSection extends StatelessWidget {
     final awayCity = isBaseballLike && awayParts.length > 1 ? awayParts.sublist(0, awayParts.length - 1).join(' ') : '';
     final awayTeam = isBaseballLike ? awayParts.last : away;
 
-    // Etiqueta del tag superior según deporte
-    final String sportTag = isBaseball
-        ? '⚾ MLB · ANÁLISIS ÉLITE'
-        : isLVBP
-            ? '⚾ LVBP · ANÁLISIS ÉLITE'
-            : isBasketball
-                ? '🏀 NBA · ANÁLISIS ÉLITE'
-                : isNFL
-                    ? '🏈 NFL · ANÁLISIS ÉLITE'
-                    : match.sport == 'football_ven'
-                        ? '🇻🇪 Fútbol VEN · ANÁLISIS ÉLITE'
-                        : '⚽ Fútbol · ANÁLISIS ÉLITE';
+    // Etiqueta del tag superior: emoji del deporte + nombre real de la liga
+    final String sportEmoji = isBaseballLike
+        ? '⚾'
+        : isBasketball
+            ? '🏀'
+            : isNFL
+                ? '🏈'
+                : match.sport == 'football_ven'
+                    ? '🇻🇪'
+                    : '⚽';
+    final String sportTag = '$sportEmoji ${match.league.name.toUpperCase()} · ANÁLISIS ÉLITE';
 
     // Watermark emoji
     final String watermarkEmoji = isBaseballLike
@@ -581,7 +611,8 @@ class _ConfidenceBarState extends State<_ConfidenceBar>
           ),
         ),
         Text(
-          widget.pred.match.sport == 'baseball'
+          (widget.pred.match.sport == 'baseball' ||
+                  widget.pred.match.sport == 'baseball_lvbp')
               ? 'Calculado con 10,000 simulaciones del partido'
               : (widget.pred.match.sport == 'basketball' ||
                       widget.pred.match.sport == 'american_football')
@@ -1190,11 +1221,12 @@ class _ProButton extends StatelessWidget {
         (user?.role.toLowerCase() == 'admin');
 
     // Subtítulo adaptado por deporte
-    final String proSubtitle = match.sport == 'baseball'
-        ? 'Stats reales MLB · Clima en vivo · Análisis IA'
-        : (match.sport == 'basketball' || match.sport == 'american_football')
-            ? 'Stats temporada · Líneas ESPN · Análisis IA'
-            : 'Stats reales · Motor Bayesiano · Análisis IA';
+    final String proSubtitle =
+        (match.sport == 'baseball' || match.sport == 'baseball_lvbp')
+            ? 'Stats reales béisbol · Clima en vivo · Análisis IA'
+            : (match.sport == 'basketball' || match.sport == 'american_football')
+                ? 'Stats temporada · Líneas ESPN · Análisis IA'
+                : 'Stats reales · Motor Bayesiano · Análisis IA';
 
     if (!isPremium) {
       // FREE: botón bloqueado como gancho de conversión

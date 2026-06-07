@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import '../core/flags.dart';
 import '../core/theme.dart';
@@ -105,17 +106,24 @@ class _TeamColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNBAorNFL =
-        sport == 'basketball' || sport == 'american_football';
-    final isTheSportsDB =
-        sport == 'baseball_lvbp' || sport == 'football_ven';
+    final isBaseball    = sport == 'baseball';
+    final isNBAorNFL    = sport == 'basketball' || sport == 'american_football';
+    final isTheSportsDB = sport == 'baseball_lvbp' || sport == 'football_ven';
+    // Para fútbol: bandera si es selección nacional (Copa del Mundo), escudo si hay crestUrl (liga de clubes)
     final flagUrl = sport == 'football' ? footballFlagUrl(name) : null;
+    final hasFootballCrest = sport == 'football' && crestUrl != null && flagUrl == null;
 
     return Column(
       crossAxisAlignment:
           isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        // Fútbol internacional: bandera de país
+        // Béisbol MLB: SVG oficial de mlbstatic.com
+        if (isBaseball)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: _MlbLogo(name: name, crestUrl: crestUrl, size: 36, isRight: isRight),
+          ),
+        // Fútbol internacional Copa del Mundo: bandera de país
         if (flagUrl != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
@@ -132,7 +140,21 @@ class _TeamColumn extends StatelessWidget {
               ),
             ),
           ),
-        // NBA / NFL: crest PNG desde ESPN CDN
+        // Fútbol ligas de clubes (Premier, La Liga, Champions, etc.): escudo directo
+        if (hasFootballCrest)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Image.network(
+              crestUrl!,
+              width: 36,
+              height: 36,
+              fit: BoxFit.contain,
+              loadingBuilder: (_, child, prog) =>
+                  prog == null ? child : const SizedBox(width: 36, height: 36),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+        // NBA / NFL / WNBA / NCAA Basketball / NCAA Football / CFL: crest PNG desde ESPN CDN
         if (isNBAorNFL && crestUrl != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
@@ -146,7 +168,7 @@ class _TeamColumn extends StatelessWidget {
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),
-        // LVBP / Fútbol VEN: logo PNG desde TheSportsDB
+        // LVBP / Fútbol VEN / ligas menores béisbol: logo PNG desde TheSportsDB
         if (isTheSportsDB && crestUrl != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
@@ -278,6 +300,69 @@ class _StatusBadge extends StatelessWidget {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+// ── Logo SVG para equipos MLB ─────────────────────────────────────────────────
+
+class _MlbLogo extends StatelessWidget {
+  final String name;
+  final String? crestUrl;
+  final double size;
+  final bool isRight;
+
+  const _MlbLogo({
+    required this.name,
+    this.crestUrl,
+    this.size = 36,
+    this.isRight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Si hay crestUrl directa (URL de mlbstatic ya incluida en el modelo), usarla
+    if (crestUrl != null) {
+      if (crestUrl!.endsWith('.svg')) {
+        return SvgPicture.network(
+          crestUrl!,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => _initials(),
+        );
+      }
+      return Image.network(
+        crestUrl!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        loadingBuilder: (_, child, prog) =>
+            prog == null ? child : SizedBox(width: size, height: size),
+        errorBuilder: (_, __, ___) => _initials(),
+      );
+    }
+    return _initials();
+  }
+
+  Widget _initials() {
+    final parts = name.trim().split(' ');
+    final init = parts.length >= 2
+        ? '${parts[0][0]}${parts[1][0]}'
+        : name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Center(
+        child: Text(
+          init,
+          style: TextStyle(
+            fontSize: size * 0.36,
+            color: kMuted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 }
 

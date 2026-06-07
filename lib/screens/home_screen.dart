@@ -186,46 +186,34 @@ class _ControlBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         children: [
-          // Sport tabs — scroll horizontal para caber todos
+          // Sport tabs — un tab por deporte (agrupa todas las ligas del mismo deporte)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _SportTab(
-                  label: '⚾ MLB',
-                  active: provider.sport == 'baseball',
+                  label: '⚾ Béisbol',
+                  active: provider.sport == 'baseball' || provider.sport == 'baseball_lvbp',
                   onTap: () => provider.setSport('baseball', token: token),
                 ),
                 const SizedBox(width: 6),
                 _SportTab(
                   label: '⚽ Fútbol',
-                  active: provider.sport == 'football',
+                  active: provider.sport == 'football' || provider.sport == 'football_ven',
                   onTap: () => provider.setSport('football', token: token),
                 ),
                 const SizedBox(width: 6),
                 _SportTab(
-                  label: '🏀 NBA',
+                  label: '🏀 Baloncesto',
                   active: provider.sport == 'basketball',
                   onTap: () => provider.setSport('basketball', token: token),
                 ),
                 const SizedBox(width: 6),
                 _SportTab(
-                  label: '🏈 NFL',
+                  label: '🏈 F. Americano',
                   active: provider.sport == 'american_football',
                   onTap: () =>
                       provider.setSport('american_football', token: token),
-                ),
-                const SizedBox(width: 6),
-                _SportTab(
-                  label: '⚾ LVBP',
-                  active: provider.sport == 'baseball_lvbp',
-                  onTap: () => provider.setSport('baseball_lvbp', token: token),
-                ),
-                const SizedBox(width: 6),
-                _SportTab(
-                  label: '🇻🇪 Fútbol VEN',
-                  active: provider.sport == 'football_ven',
-                  onTap: () => provider.setSport('football_ven', token: token),
                 ),
               ],
             ),
@@ -514,6 +502,7 @@ class _AccuracyBannerState extends State<_AccuracyBanner> {
 String _sportEmoji(String sport) {
   switch (sport) {
     case 'baseball':
+    case 'baseball_lvbp':
       return '⚾';
     case 'basketball':
       return '🏀';
