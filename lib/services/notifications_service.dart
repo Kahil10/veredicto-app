@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import '../core/config.dart';
 import '../core/navigator_key.dart';
+import '../models/match_model.dart';
+import '../screens/match_detail_screen.dart';
 
 // Handler para mensajes en background (debe ser top-level)
 @pragma('vm:entry-point')
@@ -118,10 +121,43 @@ class NotificationsService {
           presentSound: true,
         ),
       ),
+      payload: jsonEncode(message.data),
     );
   }
 
   static void _onLocalTap(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload != null) {
+      try {
+        final data = jsonDecode(payload) as Map<String, dynamic>;
+        final matchIdStr = data['match_id'] as String?;
+        if (matchIdStr != null) {
+          final matchId = int.tryParse(matchIdStr);
+          if (matchId != null) {
+            _navigateToMatch(matchId);
+            return;
+          }
+        }
+      } catch (_) {}
+    }
+    // Fallback: ir a home
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => true);
+  }
+
+  static Future<void> _navigateToMatch(int matchId) async {
+    try {
+      final resp = await http.get(
+        Uri.parse('$kBaseUrl/api/matches/$matchId'),
+      ).timeout(const Duration(seconds: 10));
+      if (resp.statusCode == 200) {
+        final match = MatchModel.fromJson(
+            jsonDecode(resp.body) as Map<String, dynamic>);
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (_) => MatchDetailScreen(match: match)),
+        );
+        return;
+      }
+    } catch (_) {}
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => true);
   }
 

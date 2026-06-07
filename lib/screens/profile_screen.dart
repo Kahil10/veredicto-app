@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/api_client.dart';
 import '../core/config.dart';
 import '../core/theme.dart';
 import '../models/user_model.dart';
@@ -118,6 +120,11 @@ class ProfileScreen extends StatelessWidget {
 
                   // Créditos / predicciones diarias
                   _CreditsCard(user: user),
+
+                  const SizedBox(height: 12),
+
+                  // Historial de predicciones
+                  _PredictionHistorySection(token: auth.token),
 
                   const SizedBox(height: 24),
 
@@ -501,6 +508,221 @@ class _BenefitRow extends StatelessWidget {
           Text(text, style: const TextStyle(color: kText, fontSize: 13)),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Historial de predicciones del usuario
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PredictionHistorySection extends StatefulWidget {
+  final String? token;
+  const _PredictionHistorySection({this.token});
+
+  @override
+  State<_PredictionHistorySection> createState() =>
+      _PredictionHistorySectionState();
+}
+
+class _PredictionHistorySectionState
+    extends State<_PredictionHistorySection> {
+  List<Map<String, dynamic>>? _items;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    if (widget.token == null) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final data = await ApiClient(token: widget.token)
+          .get('/api/users/me/predictions');
+      if (mounted) {
+        setState(() {
+          _items = (data as List)
+              .cast<Map<String, dynamic>>();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _loading = false; _failed = true; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // No mostrar si no hay token (usuario no logueado)
+    if (widget.token == null) return const SizedBox.shrink();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history_rounded,
+                    color: kAccent, size: 20),
+                const SizedBox(width: 8),
+                const Text('Mis predicciones',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 15)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: kPurple),
+                ),
+              )
+            else if (_failed)
+              const Text('No se pudo cargar el historial.',
+                  style: TextStyle(color: kMuted, fontSize: 13))
+            else if (_items == null || _items!.isEmpty)
+              const Text('Aún no has consultado predicciones.',
+                  style: TextStyle(color: kMuted, fontSize: 13))
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _items!.length.clamp(0, 10),
+                separatorBuilder: (_, __) =>
+                    const Divider(color: kBorder, height: 16),
+                itemBuilder: (context, i) =>
+                    _PredictionItem(data: _items![i]),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PredictionItem extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _PredictionItem({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final homeTeam = data['home_team'] as String? ?? '?';
+    final awayTeam = data['away_team'] as String? ?? '?';
+    final sport = data['sport'] as String? ?? 'football';
+    final status = data['status'] as String? ?? '';
+    final homeScore = data['home_score'];
+    final awayScore = data['away_score'];
+    final predicted = data['predicted_winner'] as String?;
+    final correct = data['correct'];
+    final kickoff = data['kickoff'] != null
+        ? DateTime.tryParse(data['kickoff'])?.toLocal()
+        : null;
+
+    final isFinished =
+        ['FT', 'AET', 'PEN', 'F', 'Final'].contains(status);
+    final isLive =
+        ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].contains(status);
+
+    // Ícono deporte
+    final sportEmoji = sport == 'baseball' ? '⚾' : '⚽';
+
+    // Texto del resultado / estado
+    String statusLabel;
+    if (isFinished && homeScore != null && awayScore != null) {
+      statusLabel = 'FIN $homeScore-$awayScore';
+    } else if (isLive) {
+      statusLabel = 'EN VIVO';
+    } else if (kickoff != null) {
+      statusLabel = DateFormat('d MMM h:mma', 'es').format(kickoff);
+    } else {
+      statusLabel = status;
+    }
+
+    // Texto predicción
+    String predLabel;
+    if (predicted == 'home') {
+      predLabel = 'Local gana';
+    } else if (predicted == 'away') {
+      predLabel = 'Visitante gana';
+    } else if (predicted == 'draw') {
+      predLabel = 'Empate';
+    } else {
+      predLabel = predicted ?? '—';
+    }
+
+    // Ícono resultado
+    Widget resultIcon;
+    if (correct == true) {
+      resultIcon = const Text(' ✓',
+          style: TextStyle(color: kGreen, fontWeight: FontWeight.w700));
+    } else if (correct == false) {
+      resultIcon = const Text(' ✗',
+          style: TextStyle(color: kRed, fontWeight: FontWeight.w700));
+    } else {
+      resultIcon = const Text(' ⏳', style: TextStyle(color: kMuted));
+    }
+
+    final correctLabel = correct == true
+        ? ' (Acertó)'
+        : correct == false
+            ? ' (Falló)'
+            : '';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(sportEmoji, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$homeTeam vs $awayTeam',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: kText),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(statusLabel,
+                      style:
+                          const TextStyle(color: kMuted, fontSize: 11)),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Text('Predijo: $predLabel',
+                      style: const TextStyle(
+                          color: kMuted, fontSize: 12)),
+                  resultIcon,
+                  if (correctLabel.isNotEmpty)
+                    Text(correctLabel,
+                        style: TextStyle(
+                            color: correct == true ? kGreen : kRed,
+                            fontSize: 12)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

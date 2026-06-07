@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../core/config.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/matches_provider.dart';
@@ -159,6 +162,8 @@ class _MatchesTab extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // Accuracy banner
+          const _AccuracyBanner(),
           // Sport selector + date picker
           _ControlBar(provider: provider, token: auth.token),
           // Match list
@@ -376,6 +381,101 @@ class _WorldCupBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Banner de estadísticas de acierto del motor Veredicto
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AccuracyBanner extends StatefulWidget {
+  const _AccuracyBanner();
+
+  @override
+  State<_AccuracyBanner> createState() => _AccuracyBannerState();
+}
+
+class _AccuracyBannerState extends State<_AccuracyBanner> {
+  Map<String, dynamic>? _data;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$kBaseUrl/api/stats/accuracy'))
+          .timeout(const Duration(seconds: 8));
+      if (resp.statusCode == 200 && mounted) {
+        setState(
+            () => _data = jsonDecode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed || _data == null) return const SizedBox.shrink();
+
+    final globalPct = (_data!['accuracy_pct'] as num).toDouble();
+    final week = _data!['this_week'] as Map<String, dynamic>?;
+    final weekPct = week != null
+        ? (week['accuracy_pct'] as num).toDouble()
+        : null;
+    final weekCorrect = week?['correct'] as int?;
+    final weekTotal = week?['total'] as int?;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Row(
+        children: [
+          const Text('🎯', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Motor Veredicto',
+                    style: bebasNeue(13, color: kAccent, letterSpacing: 0.5)),
+                Text(
+                  '${globalPct.toStringAsFixed(1)}% acierto global',
+                  style: dmSans(11, color: kMuted),
+                ),
+              ],
+            ),
+          ),
+          if (weekPct != null && weekCorrect != null && weekTotal != null) ...[
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('Esta semana',
+                    style: dmSans(10, color: kMuted)),
+                Text(
+                  '${weekPct.toStringAsFixed(1)}% ($weekCorrect/$weekTotal) ✓',
+                  style: dmSans(11,
+                      color: kGreen, weight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
