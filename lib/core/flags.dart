@@ -152,18 +152,12 @@ String? footballFlagUrl(String teamName) {
     'Cuba': 'cu',
     'Dominican Republic': 'do',
     'Puerto Rico': 'pr',
-    'Jamaica': 'jm',
-    'Trinidad and Tobago': 'tt',
     'Curaçao': 'cw',
     'Curacao': 'cw',
-    // Territorios adicionales
-    'Cape Verde': 'cv',
+    // Variantes adicionales de nombres
     'Cape Verde Islands': 'cv',
     'Cabo Verde': 'cv',
-    // Congo
-    'Congo': 'cg',
     'Congo DR': 'cd',
-    'DR Congo': 'cd',
     'Democratic Republic of Congo': 'cd',
     'Republic of Congo': 'cg',
   };
