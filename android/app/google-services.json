@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "695436572563",
+    "project_id": "veredicto-37d9f",
+    "storage_bucket": "veredicto-37d9f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:695436572563:android:ff12963707ecdbefb75a66",
+        "android_client_info": {
+          "package_name": "com.veredicto.veredicto_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9QqZ3EV5vxQHJFwCnJXwaA3bK2d9UrO0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
