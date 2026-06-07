@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../models/match_model.dart';
 import '../models/prediction_model.dart';
 import '../providers/auth_provider.dart';
 import '../screens/pro_analysis_screen.dart';
@@ -103,7 +104,7 @@ class PredictionCard extends StatelessWidget {
         const SizedBox(height: 10),
 
         // Botón Análisis Pro
-        _ProButton(pred: pred),
+        _ProButton(pred: pred, match: match),
         const SizedBox(height: 12),
 
         // Pitchers
@@ -123,8 +124,8 @@ class PredictionCard extends StatelessWidget {
           _SectionCard(
             icon: '📊',
             iconColor: kGold,
-            title: 'HEAD-TO-HEAD',
-            subtitle: 'Últimos ${pred.h2hJuegos} enfrentamientos',
+            title: 'CARA A CARA',
+            subtitle: 'Últimos ${pred.h2hJuegos} juegos entre estos equipos',
             child: _H2HContent(pred: pred),
           ),
           const SizedBox(height: 10),
@@ -135,8 +136,8 @@ class PredictionCard extends StatelessWidget {
           _SectionCard(
             icon: '🎯',
             iconColor: kAccent3,
-            title: 'PONCHES DEL PITCHER',
-            subtitle: 'Prop bet — strikeouts del abridor',
+            title: 'PONCHES DEL LANZADOR',
+            subtitle: '¿Cuántos bateadores poncha el lanzador hoy?',
             child: _PoncheContent(pred: pred),
           ),
           const SizedBox(height: 10),
@@ -147,8 +148,8 @@ class PredictionCard extends StatelessWidget {
           _SectionCard(
             icon: '⚖️',
             iconColor: kAccent2,
-            title: 'TOTALES',
-            subtitle: 'Over / Under carreras',
+            title: 'MÁS O MENOS',
+            subtitle: '¿Anotan más o menos de X carreras en total?',
             child: _OUContent(pred: pred),
           ),
           const SizedBox(height: 10),
@@ -170,14 +171,17 @@ class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match  = pred.match;
+    final isBaseball = match.sport == 'baseball';
     final home   = match.homeTeam;
     final away   = match.awayTeam;
+    // Para béisbol: separar ciudad del nombre del equipo (ej. "New York" / "Yankees")
+    // Para fútbol: mostrar nombre completo como equipo (ej. "South Africa")
     final homeParts = home.split(' ');
     final awayParts = away.split(' ');
-    final homeCity = homeParts.length > 1 ? homeParts.sublist(0, homeParts.length - 1).join(' ') : '';
-    final homeTeam = homeParts.last;
-    final awayCity = awayParts.length > 1 ? awayParts.sublist(0, awayParts.length - 1).join(' ') : '';
-    final awayTeam = awayParts.last;
+    final homeCity = isBaseball && homeParts.length > 1 ? homeParts.sublist(0, homeParts.length - 1).join(' ') : '';
+    final homeTeam = isBaseball ? homeParts.last : home;
+    final awayCity = isBaseball && awayParts.length > 1 ? awayParts.sublist(0, awayParts.length - 1).join(' ') : '';
+    final awayTeam = isBaseball ? awayParts.last : away;
 
     // Pick principal basado en probabilidades
     final homeWin  = pred.homeWinPct;
@@ -197,11 +201,11 @@ class _HeroSection extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Watermark béisbol
+          // Watermark deporte
           Positioned(
             right: -10,
             top: -10,
-            child: Text('⚾',
+            child: Text(match.sport == 'baseball' ? '⚾' : '⚽',
                 style: const TextStyle(fontSize: 110, color: Colors.white)
                     .copyWith(color: Colors.white.withAlpha(10))),
           ),
@@ -215,7 +219,9 @@ class _HeroSection extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _Tag('⚾ MLB · ANÁLISIS ÉLITE', color: kAccent, textColor: Colors.black),
+                    _Tag(
+                      match.sport == 'baseball' ? '⚾ MLB · ANÁLISIS ÉLITE' : '⚽ Fútbol · ANÁLISIS ÉLITE',
+                      color: kAccent, textColor: Colors.black),
                     _Tag(
                       '${match.kickoff.day} ${_mes(match.kickoff.month)} · ${match.kickoff.hour}:${match.kickoff.minute.toString().padLeft(2,'0')}',
                       color: kSurface2,
@@ -397,8 +403,12 @@ class _ConfidenceBarState extends State<_ConfidenceBar>
                 fontSize: 46, color: kAccent, letterSpacing: 1),
           ),
         ),
-        Text('Motor Monte Carlo 10k · Bayesiano',
-            style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted)),
+        Text(
+          widget.pred.match.sport == 'baseball'
+              ? 'Calculado con 10,000 simulaciones del partido'
+              : 'Motor Bayesiano · Rankings FIFA · 10,000 simulaciones',
+          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted),
+        ),
       ]),
     );
   }
@@ -557,16 +567,19 @@ class _PitcherCard extends StatelessWidget {
                 Row(children: [
                   Expanded(child: _PStat(
                     val: era?.toStringAsFixed(2) ?? '—',
-                    lbl: 'ERA',
+                    lbl: 'CARR/JGO',
                     color: eraColor,
                   )),
                   const SizedBox(width: 6),
                   Expanded(child: _PStat(
                     val: k9?.toStringAsFixed(1) ?? '—',
-                    lbl: 'K/JGO',
+                    lbl: 'PONCHES',
                     color: kAccent3,
                   )),
                 ]),
+                const SizedBox(height: 6),
+                Text('CARR/JGO = carreras que le meten por partido',
+                    style: GoogleFonts.dmSans(fontSize: 8, color: kMuted.withAlpha(120))),
               ],
             ),
           ),
@@ -718,7 +731,7 @@ class _PropRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOver  = overPct >= underPct;
     final favColor = isOver ? kGreen : kAccent3;
-    final favLabel = isOver ? 'OVER ${line.toStringAsFixed(1)}' : 'UNDER ${line.toStringAsFixed(1)}';
+    final favLabel = isOver ? 'MÁS DE ${line.toStringAsFixed(1)}' : 'MENOS DE ${line.toStringAsFixed(1)}';
     final favPct   = isOver ? overPct : underPct;
 
     return Container(
@@ -735,7 +748,7 @@ class _PropRow extends StatelessWidget {
           Text(team.toUpperCase(),
               style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
           const SizedBox(height: 4),
-          Text('Prom. histórico: ${mu.toStringAsFixed(1)} K/jgo',
+          Text('Promedia ${mu.toStringAsFixed(1)} ponches por juego',
               style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -774,7 +787,7 @@ class _OUContent extends StatelessWidget {
     final proj  = pred.projectedTotal;
     final isOver = over > under;
     final pickColor = isOver ? kGreen : kAccent2;
-    final pickLabel = isOver ? '🔥  ALTAS  >$line' : '❄️  BAJAS  <$line';
+    final pickLabel = isOver ? '🔥  MÁS DE $line CARRERAS' : '❄️  MENOS DE $line CARRERAS';
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       // Pick destacado
@@ -802,10 +815,11 @@ class _OUContent extends StatelessWidget {
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('LÍNEA', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
           Text('$line', style: GoogleFonts.bebasNeue(fontSize: 28, color: kText)),
+          Text('carreras totales', style: GoogleFonts.dmSans(fontSize: 9, color: kMuted)),
         ]),
         if (proj != null)
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('PROYECTADO', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
+            Text('NUESTRO CÁLCULO', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
             Text(proj.toStringAsFixed(1),
                 style: GoogleFonts.bebasNeue(fontSize: 28, color: kAccent3)),
           ]),
@@ -813,9 +827,9 @@ class _OUContent extends StatelessWidget {
       const SizedBox(height: 10),
 
       // Barras over/under
-      _OUBar(label: 'OVER  >$line', pct: over, color: kGreen),
+      _OUBar(label: 'MÁS  >$line', pct: over, color: kGreen),
       const SizedBox(height: 6),
-      _OUBar(label: 'UNDER <$line', pct: under, color: kAccent2),
+      _OUBar(label: 'MENOS <$line', pct: under, color: kAccent2),
     ]);
   }
 }
@@ -915,7 +929,7 @@ class _DataSection extends StatelessWidget {
             Row(children: [
               const Icon(Icons.warning_amber_rounded, color: kGold, size: 13),
               const SizedBox(width: 6),
-              Text('HISTORIAL LIMITADO',
+              Text('POCOS DATOS DISPONIBLES',
                   style: GoogleFonts.jetBrainsMono(
                       fontSize: 9, color: kGold, letterSpacing: 1.5)),
             ]),
@@ -926,29 +940,6 @@ class _DataSection extends StatelessWidget {
         ),
       ],
 
-      if (faltantes.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: kAccent3.withAlpha(12),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kAccent3.withAlpha(40)),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Icon(Icons.rocket_launch_outlined, color: kAccent3, size: 13),
-              const SizedBox(width: 6),
-              Text('EN DESARROLLO',
-                  style: GoogleFonts.jetBrainsMono(
-                      fontSize: 9, color: kAccent3, letterSpacing: 1.5)),
-            ]),
-            const SizedBox(height: 6),
-            ...faltantes.map((v) => Text('· $v',
-                style: GoogleFonts.dmSans(fontSize: 11, color: kMuted))),
-          ]),
-        ),
-      ],
 
       const SizedBox(height: 10),
       Text('ANÁLISIS IA · VERIFICA ANTES DE APOSTAR',
@@ -990,7 +981,8 @@ class _Tag extends StatelessWidget {
 
 class _ProButton extends StatelessWidget {
   final PredictionModel pred;
-  const _ProButton({required this.pred});
+  final MatchModel match;
+  const _ProButton({required this.pred, required this.match});
 
   @override
   Widget build(BuildContext context) {
@@ -1022,7 +1014,7 @@ class _ProButton extends StatelessWidget {
             Text('ANÁLISIS PRO',
                 style: GoogleFonts.bebasNeue(
                     fontSize: 16, color: kAccent.withAlpha(150), letterSpacing: 1.5)),
-            Text('MLB Stats API · Clima · IA Narrativa · Picks',
+            Text(match.sport == 'baseball' ? 'Stats reales MLB · Clima en vivo · Análisis IA' : 'Stats reales · Motor Bayesiano · Análisis IA',
                 style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
           ])),
           Container(
@@ -1077,7 +1069,7 @@ class _ProButton extends StatelessWidget {
             Text('ANÁLISIS PRO',
                 style: GoogleFonts.bebasNeue(
                     fontSize: 16, color: kAccent, letterSpacing: 1.5)),
-            Text('MLB Stats API · Clima · IA Narrativa · Picks',
+            Text(match.sport == 'baseball' ? 'Stats reales MLB · Clima en vivo · Análisis IA' : 'Stats reales · Motor Bayesiano · Análisis IA',
                 style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
           ])),
           const Icon(Icons.arrow_forward_ios, color: kAccent, size: 14),
