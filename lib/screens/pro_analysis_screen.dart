@@ -140,7 +140,7 @@ class _ProAnalysisScreenState extends State<ProAnalysisScreen> {
         ],
       ),
       body: _loading
-          ? _LoadingView(step: _loadingStep, isFootball: widget.match.sport == 'football')
+          ? _LoadingView(step: _loadingStep, isFootball: widget.match.sport == 'football' || widget.match.sport == 'football_ven')
           : _error != null
               ? _ErrorView(error: _error!, match: widget.match, pred: widget.pred)
               : _AnalysisView(data: _data!, match: widget.match, pred: widget.pred),
@@ -211,8 +211,8 @@ class _LoadingViewState extends State<_LoadingView>
           const SizedBox(height: 24),
           Text(
             widget.isFootball
-                ? 'Rankings FIFA · Motor Bayesiano · IA'
-                : 'Consultando MLB Stats API · Clima · IA',
+                ? 'Motor Bayesiano · IA'
+                : 'Motor Bayesiano + Monte Carlo · IA',
             style: GoogleFonts.dmSans(fontSize: 11, color: kMuted.withAlpha(120)),
           ),
         ]),
@@ -252,7 +252,10 @@ class _AnalysisView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFootball = match.sport == 'football';
+    final sport      = match.sport;
+    final isMLB      = sport == 'baseball';
+    final isFootball = sport == 'football' || sport == 'football_ven';
+
     final narrative = (data['narrative'] as Map?) ?? {};
     final motor     = (data['motor'] as Map?) ?? {};
     final homeRec   = (data['home_record'] as Map?) ?? {};
@@ -283,8 +286,8 @@ class _AnalysisView extends StatelessWidget {
           ),
         const SizedBox(height: 10),
 
-        // Records de los equipos — se oculta para fútbol si no hay datos W-L
-        if (!(isFootball && homeRec.isEmpty)) ...[
+        // Records — SOLO MLB (béisbol puro con standings)
+        if (isMLB && homeRec.isNotEmpty) ...[
           _ProSection(
             icon: '🏆',
             color: kGold,
@@ -299,8 +302,8 @@ class _AnalysisView extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Pitchers detalle
-        if (hpStats.isNotEmpty || apStats.isNotEmpty)
+        // Pitchers detalle — SOLO MLB
+        if (isMLB && (hpStats.isNotEmpty || apStats.isNotEmpty))
           _ProSection(
             icon: '⚾',
             color: kAccent3,
@@ -314,27 +317,28 @@ class _AnalysisView extends StatelessWidget {
               awayLog: apLog,
             ),
           ),
-        if (hpStats.isNotEmpty || apStats.isNotEmpty) const SizedBox(height: 10),
+        if (isMLB && (hpStats.isNotEmpty || apStats.isNotEmpty)) const SizedBox(height: 10),
 
-        // Análisis de pitchers
-        if ((narrative['pitchers'] as String?)?.isNotEmpty == true)
+        // Análisis de pitchers — SOLO MLB
+        if (isMLB && (narrative['pitchers'] as String?)?.isNotEmpty == true)
           _ProSection(
             icon: '🎯',
             color: kAccent2,
             title: 'ANÁLISIS DEL MATCHUP',
             child: _NarrativeText(narrative['pitchers']),
           ),
-        const SizedBox(height: 10),
+        if (isMLB && (narrative['pitchers'] as String?)?.isNotEmpty == true)
+          const SizedBox(height: 10),
 
-        // Clima
-        if (weather.isNotEmpty)
+        // Clima — SOLO MLB
+        if (isMLB && weather.isNotEmpty)
           _ProSection(
             icon: '🌡️',
             color: kAccent3,
             title: 'CLIMA DEL ESTADIO',
             child: _WeatherCard(weather: weather, narrative: narrative['clima']),
           ),
-        if (weather.isNotEmpty) const SizedBox(height: 10),
+        if (isMLB && weather.isNotEmpty) const SizedBox(height: 10),
 
         // Tabla de factores
         if (factors.isNotEmpty)
@@ -381,7 +385,8 @@ class _ProHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFootball = match.sport == 'football';
+    final sport = match.sport;
+    final isFootball = sport == 'football' || sport == 'football_ven';
     final home    = isFootball ? match.homeTeam : match.homeTeam.split(' ').last;
     final away    = isFootball ? match.awayTeam : match.awayTeam.split(' ').last;
     final homePct = motor['home_win_pct'];
