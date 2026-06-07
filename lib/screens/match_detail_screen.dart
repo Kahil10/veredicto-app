@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/config.dart';
@@ -24,6 +27,8 @@ class MatchDetailScreen extends StatefulWidget {
 }
 
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
+  final ScreenshotController _screenshotController = ScreenshotController();
+
   @override
   void initState() {
     super.initState();
@@ -89,16 +94,19 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             IconButton(
               icon: const Icon(Icons.share),
               tooltip: 'Compartir predicción',
-              onPressed: () {
+              onPressed: () async {
                 final isFootball = match.sport == 'football';
                 final emoji = isFootball ? '⚽' : '⚾';
-                final league = isFootball ? match.league.name : 'MLB';
-                final homePct = pred.homeWinPct.toStringAsFixed(1);
-                final awayPct = pred.awayWinPct.toStringAsFixed(1);
-                final text =
-                    '$emoji ${match.homeTeam} $homePct% vs ${match.awayTeam} $awayPct% · $league · Motor Veredicto 🔮\n'
-                    'Descarga Veredicto para más predicciones';
-                Share.share(text);
+                final image = await _screenshotController.capture(pixelRatio: 2.0);
+                if (image != null) {
+                  final dir = await getTemporaryDirectory();
+                  final file = File('${dir.path}/veredicto_pred.png');
+                  await file.writeAsBytes(image);
+                  await Share.shareXFiles(
+                    [XFile(file.path)],
+                    text: '$emoji ${match.homeTeam} vs ${match.awayTeam} · Motor Veredicto 🔮',
+                  );
+                }
               },
             ),
           IconButton(
@@ -159,7 +167,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 ),
               )
             else if (pred != null)
-              PredictionCard(pred: pred)
+              Screenshot(
+                controller: _screenshotController,
+                child: PredictionCard(pred: pred),
+              )
             else
               Card(
                 child: Padding(

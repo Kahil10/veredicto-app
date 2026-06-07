@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -9,6 +10,7 @@ import 'chat_screen.dart';
 import 'live_games_screen.dart';
 import 'match_detail_screen.dart';
 import 'profile_screen.dart';
+import 'world_cup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -116,7 +118,7 @@ class _LiveTabIconState extends State<_LiveTabIcon>
               height: 7,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF22c55e).withValues(alpha: _anim.value),
+                color: const Color(0xFF22c55e).withOpacity(_anim.value),
               ),
             ),
           ),
@@ -293,6 +295,92 @@ class _DateRow extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Banner Copa del Mundo — visible entre 11 jun y 19 jul 2026
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WorldCupBanner extends StatelessWidget {
+  const _WorldCupBanner();
+
+  static bool get _shouldShow {
+    final now = DateTime.now();
+    // Mostrar banner desde 4 días antes del inicio hasta el cierre del torneo
+    final bannerStart = DateTime(2026, 6, 7);
+    final bannerEnd = DateTime(2026, 7, 19, 23, 59, 59);
+    return !now.isBefore(bannerStart) && now.isBefore(bannerEnd);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_shouldShow) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const WorldCupScreen()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0a2e1a), Color(0xFF0f3d22), Color(0xFF0a2e1a)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF22c55e).withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            const Text('⚽', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Copa del Mundo 2026',
+                    style: GoogleFonts.bebasNeue(
+                      fontSize: 17,
+                      color: kGreen,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  Text(
+                    '11 JUN · Grupos y resultados',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: const Color(0xFF22c55e).withOpacity(0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: kGreen,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Ver grupos →',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _MatchList extends StatelessWidget {
   final MatchesProvider provider;
   final String? token;
@@ -330,17 +418,24 @@ class _MatchList extends StatelessWidget {
     }
 
     if (provider.matches.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(provider.sport == 'baseball' ? '⚾' : '⚽',
-                style: const TextStyle(fontSize: 48)),
-            const SizedBox(height: 16),
-            const Text('Sin partidos este día',
-                style: TextStyle(color: kMuted, fontSize: 16)),
-          ],
-        ),
+      return Column(
+        children: [
+          const _WorldCupBanner(),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(provider.sport == 'baseball' ? '⚾' : '⚽',
+                      style: const TextStyle(fontSize: 48)),
+                  const SizedBox(height: 16),
+                  const Text('Sin partidos este día',
+                      style: TextStyle(color: kMuted, fontSize: 16)),
+                ],
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -348,11 +443,13 @@ class _MatchList extends StatelessWidget {
       color: kPurple,
       onRefresh: () => provider.loadMatches(token: token),
       child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: provider.matches.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        itemCount: provider.matches.length + 1,
+        separatorBuilder: (_, i) =>
+            i == 0 ? const SizedBox.shrink() : const SizedBox(height: 10),
         itemBuilder: (ctx, i) {
-          final match = provider.matches[i];
+          if (i == 0) return const _WorldCupBanner();
+          final match = provider.matches[i - 1];
           return MatchCard(
             match: match,
             onTap: () => Navigator.push(
