@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/navigator_key.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
@@ -46,6 +47,7 @@ class VeredictoApp extends StatelessWidget {
     final isLoggedIn = context.watch<AuthProvider>().isLoggedIn;
     return MaterialApp(
       title: 'Veredicto',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       initialRoute: isLoggedIn ? '/home' : (showOnboarding ? '/onboarding' : '/login'),

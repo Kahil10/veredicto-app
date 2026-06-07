@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import '../core/config.dart';
+import '../core/navigator_key.dart';
 
 // Handler para mensajes en background (debe ser top-level)
 @pragma('vm:entry-point')
@@ -121,7 +122,7 @@ class NotificationsService {
   }
 
   static void _onLocalTap(NotificationResponse response) {
-    // Aquí se puede navegar a la pantalla correcta según payload
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => true);
   }
 
   // ── Desregistrar token al cerrar sesión ───────────────────────────────────

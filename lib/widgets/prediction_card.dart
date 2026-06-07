@@ -378,6 +378,14 @@ class _ConfidenceBarState extends State<_ConfidenceBar>
   }
 
   @override
+  void didUpdateWidget(_ConfidenceBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pred.confidence != widget.pred.confidence) {
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
   void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override

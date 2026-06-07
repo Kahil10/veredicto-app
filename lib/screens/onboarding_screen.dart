@@ -72,8 +72,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _finish() {
-    OnboardingScreen.markDone();
+  Future<void> _finish() async {
+    await OnboardingScreen.markDone();
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
   }
 

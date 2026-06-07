@@ -338,7 +338,7 @@ class _AdminCard extends StatelessWidget {
                     style: TextStyle(
                         color: Colors.white, fontWeight: FontWeight.w600)),
                 onPressed: () => launchUrl(
-                  Uri.parse('${kBaseUrl.replaceAll('/api', '')}/admin/'),
+                  Uri.parse('$kBaseUrl/admin/'),
                   mode: LaunchMode.externalApplication,
                 ),
               ),
