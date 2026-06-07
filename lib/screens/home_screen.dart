@@ -499,6 +499,190 @@ class _AccuracyBannerState extends State<_AccuracyBanner> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _EmptyMatchesState extends StatelessWidget {
+  final String sport;
+  const _EmptyMatchesState({required this.sport});
+
+  static const _info = <String, Map<String, dynamic>>{
+    'american_football': {
+      'emoji': '🏈',
+      'titulo': 'Fútbol Americano',
+      'estado': 'TEMPORADA PENDIENTE',
+      'color': 0xFFFF6B35,
+      'ligas': [
+        ('NFL', 'Temporada regular inicia sep 2026'),
+        ('NCAA Football', 'Temporada regular inicia ago 2026'),
+        ('CFL', 'Temporada en curso — datos pronto'),
+      ],
+      'hint': 'Los mejores juegos de gridiron se vienen. ¡Regresa en agosto!',
+    },
+    'baseball': {
+      'emoji': '⚾',
+      'titulo': 'Béisbol',
+      'estado': 'SIN PARTIDOS HOY',
+      'color': 0xFF3A86FF,
+      'ligas': [
+        ('MLB + Ligas Menores', 'Temporada activa — prueba otra fecha'),
+        ('LVBP Venezuela', 'Temporada de invierno: nov–ene'),
+        ('LIDOM · LMP · LBPRC', 'Temporada de invierno: oct–feb'),
+      ],
+      'hint': 'Cambia la fecha para ver partidos de MLB, AAA, AA y más.',
+    },
+    'basketball': {
+      'emoji': '🏀',
+      'titulo': 'Baloncesto',
+      'estado': 'SIN PARTIDOS HOY',
+      'color': 0xFFFF9500,
+      'ligas': [
+        ('NBA', 'Finales en curso — prueba otra fecha'),
+        ('WNBA', 'Temporada activa may–sep'),
+        ('NCAA Basketball', 'Temporada regular: nov–abr'),
+      ],
+      'hint': 'Cambia la fecha para ver partidos disponibles.',
+    },
+    'football': {
+      'emoji': '⚽',
+      'titulo': 'Fútbol',
+      'estado': 'SIN PARTIDOS HOY',
+      'color': 0xFF06D6A0,
+      'ligas': [
+        ('Copa del Mundo 2026', 'Inicia 11 junio 2026 — USA/Canadá/México'),
+        ('Champions · Premier · La Liga', 'Temporada activa'),
+        ('Copa Libertadores · MLS', 'Temporada activa'),
+      ],
+      'hint': 'Cambia la fecha o revisa otras ligas disponibles.',
+    },
+    'football_ven': {
+      'emoji': '🇻🇪',
+      'titulo': 'Fútbol Venezolano',
+      'estado': 'SIN PARTIDOS HOY',
+      'color': 0xFFCF0A2C,
+      'ligas': [
+        ('Primera División', 'Temporada activa — prueba otra fecha'),
+        ('Liga FUTVE', 'Partidos disponibles en temporada'),
+      ],
+      'hint': 'Cambia la fecha para ver partidos de la liga local.',
+    },
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final data = _info[sport] ?? _info['football']!;
+    final color = Color(data['color'] as int);
+    final ligas = data['ligas'] as List<(String, String)>;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+      child: Column(
+        children: [
+          Text(data['emoji'] as String,
+              style: const TextStyle(fontSize: 64)),
+          const SizedBox(height: 12),
+          Text(
+            data['titulo'] as String,
+            style: GoogleFonts.barlow(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.4)),
+            ),
+            child: Text(
+              data['estado'] as String,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          Container(
+            decoration: BoxDecoration(
+              color: kCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.07)),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < ligas.length; i++) ...[
+                  if (i > 0)
+                    Divider(height: 1, color: Colors.white.withOpacity(0.06)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ligas[i].$1,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                ligas[i].$2,
+                                style: TextStyle(
+                                  color: kMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.calendar_today_outlined,
+                  size: 14, color: kMuted),
+              const SizedBox(width: 6),
+              Text(
+                data['hint'] as String,
+                style: TextStyle(color: kMuted, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 String _sportEmoji(String sport) {
   switch (sport) {
     case 'baseball':
@@ -554,18 +738,7 @@ class _MatchList extends StatelessWidget {
         children: [
           _WorldCupBanner(sport: provider.sport),
           Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_sportEmoji(provider.sport),
-                      style: const TextStyle(fontSize: 48)),
-                  const SizedBox(height: 16),
-                  const Text('Sin partidos este día',
-                      style: TextStyle(color: kMuted, fontSize: 16)),
-                ],
-              ),
-            ),
+            child: _EmptyMatchesState(sport: provider.sport),
           ),
         ],
       );
