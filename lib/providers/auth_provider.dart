@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
 import '../models/user_model.dart';
+import '../services/notifications_service.dart';
+
+const _storage = FlutterSecureStorage(
+  aOptions: AndroidOptions(encryptedSharedPreferences: true),
+);
 
 class AuthProvider extends ChangeNotifier {
   String? _token;
@@ -16,9 +21,13 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _token != null;
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('jwt_token');
-    if (_token != null) await _fetchMe();
+    _token = await _storage.read(key: 'jwt_token');
+    if (_token != null) {
+      await _fetchMe();
+      if (_token != null) {
+        NotificationsService.registerWithAuth(_token!).ignore();
+      }
+    }
     notifyListeners();
   }
 
@@ -32,9 +41,11 @@ class AuthProvider extends ChangeNotifier {
         {'username': username, 'password': password},
       );
       _token = data['access_token'];
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('jwt_token', _token!);
+      await _storage.write(key: 'jwt_token', value: _token!);
       await _fetchMe();
+      if (_token != null) {
+        NotificationsService.registerWithAuth(_token!).ignore();
+      }
       return true;
     } on ApiException catch (e) {
       _error = e.message;
@@ -70,16 +81,17 @@ class AuthProvider extends ChangeNotifier {
       _user = UserModel.fromJson(data);
     } catch (_) {
       _token = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('jwt_token');
+      await _storage.delete(key: 'jwt_token');
     }
   }
 
   Future<void> logout() async {
+    if (_token != null) {
+      try { await NotificationsService.unregisterToken(_token!); } catch (_) {}
+    }
     _token = null;
     _user = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('jwt_token');
+    await _storage.delete(key: 'jwt_token');
     notifyListeners();
   }
 }

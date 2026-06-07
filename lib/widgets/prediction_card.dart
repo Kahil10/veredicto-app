@@ -706,7 +706,10 @@ class _PoncheContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      if (pred.homeKLine != null)
+      if (pred.homeKLine != null &&
+          pred.homeKOverPct != null &&
+          pred.homeKUnderPct != null &&
+          pred.homeKMu != null)
         _PropRow(
           player: pred.homePitcherName ?? pred.match.homeTeam.split(' ').last,
           team: pred.match.homeTeam.split(' ').last,
@@ -716,9 +719,19 @@ class _PoncheContent extends StatelessWidget {
           mu: pred.homeKMu!,
           isHome: true,
         ),
-      if (pred.homeKLine != null && pred.awayKLine != null)
+      if (pred.homeKLine != null &&
+          pred.homeKOverPct != null &&
+          pred.homeKUnderPct != null &&
+          pred.homeKMu != null &&
+          pred.awayKLine != null &&
+          pred.awayKOverPct != null &&
+          pred.awayKUnderPct != null &&
+          pred.awayKMu != null)
         const SizedBox(height: 8),
-      if (pred.awayKLine != null)
+      if (pred.awayKLine != null &&
+          pred.awayKOverPct != null &&
+          pred.awayKUnderPct != null &&
+          pred.awayKMu != null)
         _PropRow(
           player: pred.awayPitcherName ?? pred.match.awayTeam.split(' ').last,
           team: pred.match.awayTeam.split(' ').last,
