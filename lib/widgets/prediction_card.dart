@@ -323,68 +323,132 @@ class _HeroSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // Logos + nombres
+                // Logos + nombres + porcentajes
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Local
-                    Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                      _TeamLogo(
-                        teamId: match.homeTeamId,
-                        teamName: home,
-                        size: 62,
-                        isHome: true,
-                        isFootball: match.sport == 'football',
-                        crestUrl: match.homeTeamCrest,
-                        sport: match.sport,
-                        useNetworkLogo: isLVBP || match.sport == 'football_ven',
-                      ),
-                      const SizedBox(height: 8),
-                      Text(homeCity.toUpperCase(),
-                          style: GoogleFonts.jetBrainsMono(
-                              fontSize: 8, color: kMuted, letterSpacing: 1.5)),
-                      Text(homeTeam.toUpperCase(),
-                          style: GoogleFonts.bebasNeue(
-                              fontSize: 22, color: kText, letterSpacing: 1)),
-                    ]),
-
-                    // VS + porcentajes
                     Expanded(
-                      child: Column(children: [
-                        Text('VS',
-                            style: GoogleFonts.bebasNeue(
-                                fontSize: 28, color: kMuted, letterSpacing: 3)),
-                        Text(
-                          '${pred.homeWinPct.toStringAsFixed(0)}% — ${pred.awayWinPct.toStringAsFixed(0)}%',
-                          style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted),
-                        ),
-                        if (!noDraw)
-                          Text(
-                            'Empate: ${pred.drawPct.toStringAsFixed(0)}%',
-                            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted),
+                      flex: 5,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _TeamLogo(
+                            teamId: match.homeTeamId,
+                            teamName: home,
+                            size: 68,
+                            isHome: true,
+                            isFootball: match.sport == 'football',
+                            crestUrl: match.homeTeamCrest,
+                            sport: match.sport,
+                            useNetworkLogo: isLVBP || match.sport == 'football_ven',
                           ),
-                      ]),
+                          const SizedBox(height: 10),
+                          if (homeCity.isNotEmpty)
+                            Text(homeCity.toUpperCase(),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 8, color: kMuted, letterSpacing: 1.5)),
+                          Text(homeTeam.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.bebasNeue(
+                                  fontSize: 18, color: kText, letterSpacing: 1)),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: kAccent.withAlpha(30),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: kAccent.withAlpha(60)),
+                            ),
+                            child: Text(
+                              '${pred.homeWinPct.toStringAsFixed(0)}%',
+                              style: GoogleFonts.bebasNeue(
+                                  fontSize: 22, color: kAccent, letterSpacing: 1),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // VS central
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('VS',
+                              style: GoogleFonts.bebasNeue(
+                                  fontSize: 30, color: kMuted, letterSpacing: 3)),
+                          if (!noDraw) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: kSurface2,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'X ${pred.drawPct.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 10, color: kMuted, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
 
                     // Visitante
-                    Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                      _TeamLogo(
-                        teamId: match.awayTeamId,
-                        teamName: away,
-                        size: 62,
-                        isHome: false,
-                        isFootball: match.sport == 'football',
-                        crestUrl: match.awayTeamCrest,
-                        sport: match.sport,
-                        useNetworkLogo: isLVBP || match.sport == 'football_ven',
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _TeamLogo(
+                            teamId: match.awayTeamId,
+                            teamName: away,
+                            size: 68,
+                            isHome: false,
+                            isFootball: match.sport == 'football',
+                            crestUrl: match.awayTeamCrest,
+                            sport: match.sport,
+                            useNetworkLogo: isLVBP || match.sport == 'football_ven',
+                          ),
+                          const SizedBox(height: 10),
+                          if (awayCity.isNotEmpty)
+                            Text(awayCity.toUpperCase(),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 8, color: kMuted, letterSpacing: 1.5)),
+                          Text(awayTeam.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.bebasNeue(
+                                  fontSize: 18, color: kText, letterSpacing: 1)),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: kAccent2.withAlpha(30),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: kAccent2.withAlpha(60)),
+                            ),
+                            child: Text(
+                              '${pred.awayWinPct.toStringAsFixed(0)}%',
+                              style: GoogleFonts.bebasNeue(
+                                  fontSize: 22, color: kAccent2, letterSpacing: 1),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(awayCity.toUpperCase(),
-                          style: GoogleFonts.jetBrainsMono(
-                              fontSize: 8, color: kMuted, letterSpacing: 1.5)),
-                      Text(awayTeam.toUpperCase(),
-                          style: GoogleFonts.bebasNeue(
-                              fontSize: 22, color: kText, letterSpacing: 1)),
-                    ]),
+                    ),
                   ],
                 ),
 
