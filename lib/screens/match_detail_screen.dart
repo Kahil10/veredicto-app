@@ -49,6 +49,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   }
 
   Future<void> _fetchLineup() async {
+    if (!mounted) return;
     setState(() => _lineupLoading = true);
     try {
       final token = context.read<AuthProvider>().token;
@@ -60,10 +61,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         headers: headers,
       );
       if (resp.statusCode == 200) {
-        setState(() => _lineup = jsonDecode(resp.body));
+        if (mounted) setState(() => _lineup = jsonDecode(resp.body));
       }
     } catch (_) {}
-    setState(() => _lineupLoading = false);
+    if (mounted) setState(() => _lineupLoading = false);
   }
 
   @override

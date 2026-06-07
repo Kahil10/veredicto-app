@@ -88,6 +88,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     if (_token != null) {
       try { await NotificationsService.unregisterToken(_token!); } catch (_) {}
+      try { await ApiClient(token: _token).post('/auth/logout', {}); } catch (_) {}
     }
     _token = null;
     _user = null;

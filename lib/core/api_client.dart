@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'config.dart';
@@ -20,26 +21,44 @@ class ApiClient {
       };
 
   Future<dynamic> get(String path) async {
-    final res = await http.get(Uri.parse('$kBaseUrl$path'), headers: _headers);
-    return _parse(res);
+    try {
+      final res = await http
+          .get(Uri.parse('$kBaseUrl$path'), headers: _headers)
+          .timeout(const Duration(seconds: 20));
+      return _parse(res);
+    } on TimeoutException {
+      throw const ApiException(408, 'El servidor tardó demasiado. Inténtalo de nuevo.');
+    }
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    final res = await http.post(
-      Uri.parse('$kBaseUrl$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    return _parse(res);
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$kBaseUrl$path'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 20));
+      return _parse(res);
+    } on TimeoutException {
+      throw const ApiException(408, 'El servidor tardó demasiado. Inténtalo de nuevo.');
+    }
   }
 
   Future<dynamic> postForm(String path, Map<String, String> body) async {
-    final res = await http.post(
-      Uri.parse('$kBaseUrl$path'),
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: body,
-    );
-    return _parse(res);
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$kBaseUrl$path'),
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: body,
+          )
+          .timeout(const Duration(seconds: 20));
+      return _parse(res);
+    } on TimeoutException {
+      throw const ApiException(408, 'El servidor tardó demasiado. Inténtalo de nuevo.');
+    }
   }
 
   dynamic _parse(http.Response res) {
