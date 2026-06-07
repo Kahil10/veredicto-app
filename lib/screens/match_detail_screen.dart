@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/flags.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -264,15 +264,18 @@ class _MatchHeader extends StatelessWidget {
                 Expanded(
                   child: Column(
                     children: [
-                      if (match.homeTeamCrest != null)
+                      if (footballFlagUrl(match.homeTeam) != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: SvgPicture.network(
-                            match.homeTeamCrest!,
-                            width: 48,
-                            height: 48,
-                            placeholderBuilder: (_) =>
-                                const SizedBox(width: 48, height: 48),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(
+                              footballFlagUrl(match.homeTeam)!,
+                              width: 56, height: 37, fit: BoxFit.cover,
+                              loadingBuilder: (_, child, prog) =>
+                                  prog == null ? child : const SizedBox(width: 56, height: 37),
+                              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                            ),
                           ),
                         ),
                       Text(
@@ -318,15 +321,18 @@ class _MatchHeader extends StatelessWidget {
                 Expanded(
                   child: Column(
                     children: [
-                      if (match.awayTeamCrest != null)
+                      if (footballFlagUrl(match.awayTeam) != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: SvgPicture.network(
-                            match.awayTeamCrest!,
-                            width: 48,
-                            height: 48,
-                            placeholderBuilder: (_) =>
-                                const SizedBox(width: 48, height: 48),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(
+                              footballFlagUrl(match.awayTeam)!,
+                              width: 56, height: 37, fit: BoxFit.cover,
+                              loadingBuilder: (_, child, prog) =>
+                                  prog == null ? child : const SizedBox(width: 56, height: 37),
+                              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                            ),
                           ),
                         ),
                       Text(

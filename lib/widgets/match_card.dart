@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import '../core/flags.dart';
 import '../core/theme.dart';
 import '../models/match_model.dart';
 
@@ -105,14 +105,20 @@ class _TeamColumn extends StatelessWidget {
       crossAxisAlignment:
           isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        if (crestUrl != null)
+        if (footballFlagUrl(name) != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: SvgPicture.network(
-              crestUrl!,
-              width: 36,
-              height: 36,
-              placeholderBuilder: (_) => const SizedBox(width: 36, height: 36),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: Image.network(
+                footballFlagUrl(name)!,
+                width: 40,
+                height: 27,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, prog) =>
+                    prog == null ? child : const SizedBox(width: 40, height: 27),
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
             ),
           ),
         Text(
