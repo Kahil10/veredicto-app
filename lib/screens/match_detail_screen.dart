@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -97,15 +98,24 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
               onPressed: () async {
                 final isFootball = match.sport == 'football';
                 final emoji = isFootball ? '⚽' : '⚾';
-                final image = await _screenshotController.capture(pixelRatio: 2.0);
-                if (image != null) {
+                try {
+                  final image = await _screenshotController.captureFromWidget(
+                    _ShareCard(match: match, pred: pred!),
+                    context: context,
+                    pixelRatio: 3.0,
+                    targetSize: const Size(400, 460),
+                  );
                   final dir = await getTemporaryDirectory();
-                  final file = File('${dir.path}/veredicto_pred.png');
+                  final file = File('${dir.path}/veredicto_share.png');
                   await file.writeAsBytes(image);
                   await Share.shareXFiles(
                     [XFile(file.path)],
-                    text: '$emoji ${match.homeTeam} vs ${match.awayTeam} · Motor Veredicto 🔮',
+                    text: '$emoji Predicción Veredicto',
                   );
+                } catch (_) {
+                  final homePct = pred!.homeWinPct.toStringAsFixed(1);
+                  final awayPct = pred!.awayWinPct.toStringAsFixed(1);
+                  Share.share('$emoji ${match.homeTeam} $homePct% vs ${match.awayTeam} $awayPct% · Motor Veredicto 🔮');
                 }
               },
             ),
@@ -167,10 +177,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 ),
               )
             else if (pred != null)
-              Screenshot(
-                controller: _screenshotController,
-                child: PredictionCard(pred: pred),
-              )
+              PredictionCard(pred: pred)
             else
               Card(
                 child: Padding(
@@ -584,4 +591,184 @@ String _buildVeraContext(MatchModel match, PredictionModel? pred) {
 
   buf.writeln('=================================');
   return buf.toString();
+}
+
+// ── Tarjeta compacta para compartir ──────────────────────────────────────────
+
+class _ShareCard extends StatelessWidget {
+  final MatchModel match;
+  final PredictionModel pred;
+  const _ShareCard({required this.match, required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFootball = match.sport == 'football';
+    final homeWin = pred.homeWinPct.toStringAsFixed(1);
+    final awayWin = pred.awayWinPct.toStringAsFixed(1);
+    final drawPct = pred.drawPct.toStringAsFixed(1);
+    final homeName = isFootball ? match.homeTeam : match.homeTeam.split(' ').last;
+    final awayName = isFootball ? match.awayTeam : match.awayTeam.split(' ').last;
+
+    final homeLeads = pred.homeWinPct >= pred.awayWinPct;
+    final pick = homeLeads ? homeName : awayName;
+    final pickPct = homeLeads ? homeWin : awayWin;
+    // pickPct is a String (e.g. "51.3")
+
+    final footerText = isFootball
+        ? 'Rankings FIFA 2026 · Motor Bayesiano · 10,000 simulaciones'
+        : 'MLB Stats · Motor Bayesiano · 10,000 simulaciones';
+
+    return Container(
+      width: 400,
+      color: const Color(0xFF0a0e13),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header bar
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            color: const Color(0xFF111827),
+            child: Row(children: [
+              Text(isFootball ? '⚽' : '⚾', style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text('VEREDICTO',
+                  style: GoogleFonts.bebasNeue(
+                      fontSize: 22, color: kAccent, letterSpacing: 3)),
+              const Spacer(),
+              Text(match.league.name,
+                  style: GoogleFonts.jetBrainsMono(
+                      fontSize: 9, color: kMuted, letterSpacing: 0.5)),
+            ]),
+          ),
+
+          // Teams + %
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Local
+                Expanded(
+                  child: Column(children: [
+                    Text(homeName.toUpperCase(),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: GoogleFonts.bebasNeue(
+                            fontSize: 18, color: kText, letterSpacing: 1, height: 1.1)),
+                    const SizedBox(height: 6),
+                    Text('$homeWin%',
+                        style: GoogleFonts.bebasNeue(
+                            fontSize: 44,
+                            color: homeLeads ? kAccent : kMuted,
+                            height: 1)),
+                    Text('LOCAL',
+                        style: GoogleFonts.jetBrainsMono(
+                            fontSize: 8, color: kMuted, letterSpacing: 1.5)),
+                  ]),
+                ),
+
+                // VS + empate
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text('VS',
+                        style: GoogleFonts.bebasNeue(
+                            fontSize: 22, color: kMuted.withAlpha(120))),
+                    if (isFootball && pred.drawPct > 0) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: kMuted.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: kMuted.withAlpha(40)),
+                        ),
+                        child: Column(children: [
+                          Text('$drawPct%',
+                              style: GoogleFonts.bebasNeue(
+                                  fontSize: 16, color: kMuted)),
+                          Text('EMPATE',
+                              style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 7, color: kMuted, letterSpacing: 1)),
+                        ]),
+                      ),
+                    ],
+                  ]),
+                ),
+
+                // Visitante
+                Expanded(
+                  child: Column(children: [
+                    Text(awayName.toUpperCase(),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: GoogleFonts.bebasNeue(
+                            fontSize: 18, color: kText, letterSpacing: 1, height: 1.1)),
+                    const SizedBox(height: 6),
+                    Text('$awayWin%',
+                        style: GoogleFonts.bebasNeue(
+                            fontSize: 44,
+                            color: !homeLeads ? kAccent2 : kMuted,
+                            height: 1)),
+                    Text('VISITANTE',
+                        style: GoogleFonts.jetBrainsMono(
+                            fontSize: 8, color: kMuted, letterSpacing: 1.5)),
+                  ]),
+                ),
+              ],
+            ),
+          ),
+
+          // Divider
+          Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 20), color: kBorder),
+
+          // Pick
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: kAccent.withAlpha(18),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: kAccent.withAlpha(60)),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text('🏆  PICK: ',
+                    style: GoogleFonts.jetBrainsMono(fontSize: 11, color: kMuted)),
+                Text(pick.toUpperCase(),
+                    style: GoogleFonts.bebasNeue(
+                        fontSize: 20, color: kAccent, letterSpacing: 1)),
+                Text('  ·  ${pred.confidence}% confianza',
+                    style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted)),
+              ]),
+            ),
+          ),
+
+          // Footer
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+            color: const Color(0xFF111827),
+            child: Column(children: [
+              if (isFootball)
+                Text('Los % representan: local gana / empate / visitante gana',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted.withAlpha(100))),
+              if (isFootball) const SizedBox(height: 4),
+              Text(footerText,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.jetBrainsMono(
+                      fontSize: 8, color: kMuted.withAlpha(140), letterSpacing: 0.3)),
+              const SizedBox(height: 4),
+              Text('veredicto.app',
+                  style: GoogleFonts.bebasNeue(
+                      fontSize: 14, color: kMuted.withAlpha(180), letterSpacing: 2)),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
 }

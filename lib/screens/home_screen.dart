@@ -300,7 +300,8 @@ class _DateRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _WorldCupBanner extends StatelessWidget {
-  const _WorldCupBanner();
+  final String? sport;
+  const _WorldCupBanner({this.sport});
 
   static bool get _shouldShow {
     final now = DateTime.now();
@@ -313,6 +314,7 @@ class _WorldCupBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!_shouldShow) return const SizedBox.shrink();
+    if (sport != null && sport != 'football') return const SizedBox.shrink();
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -420,7 +422,7 @@ class _MatchList extends StatelessWidget {
     if (provider.matches.isEmpty) {
       return Column(
         children: [
-          const _WorldCupBanner(),
+          _WorldCupBanner(sport: provider.sport),
           Expanded(
             child: Center(
               child: Column(
@@ -448,7 +450,7 @@ class _MatchList extends StatelessWidget {
         separatorBuilder: (_, i) =>
             i == 0 ? const SizedBox.shrink() : const SizedBox(height: 10),
         itemBuilder: (ctx, i) {
-          if (i == 0) return const _WorldCupBanner();
+          if (i == 0) return _WorldCupBanner(sport: provider.sport);
           final match = provider.matches[i - 1];
           return MatchCard(
             match: match,

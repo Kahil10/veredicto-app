@@ -22,7 +22,7 @@ class _ProAnalysisScreenState extends State<ProAnalysisScreen> {
   Map<String, dynamic>? _data;
   String? _error;
   bool _loading = true;
-  String _loadingStep = 'Consultando MLB Stats API...';
+  String _loadingStep = '';
 
   @override
   void initState() {
@@ -32,12 +32,20 @@ class _ProAnalysisScreenState extends State<ProAnalysisScreen> {
 
   Future<void> _load() async {
     final token = context.read<AuthProvider>().token;
-    final steps = [
-      'Consultando MLB Stats API...',
-      'Obteniendo standings y pitcher stats...',
-      'Consultando clima del estadio...',
-      'Generando análisis con IA...',
-    ];
+    final isFootball = widget.match.sport == 'football';
+    final steps = isFootball
+        ? [
+            'Consultando datos Copa del Mundo...',
+            'Obteniendo Rankings FIFA...',
+            'Analizando probabilidades con IA...',
+            'Generando análisis...',
+          ]
+        : [
+            'Consultando MLB Stats API...',
+            'Obteniendo standings y pitcher stats...',
+            'Consultando clima del estadio...',
+            'Generando análisis con IA...',
+          ];
 
     // Simular pasos de carga
     for (final step in steps) {
@@ -100,7 +108,7 @@ class _ProAnalysisScreenState extends State<ProAnalysisScreen> {
         ],
       ),
       body: _loading
-          ? _LoadingView(step: _loadingStep)
+          ? _LoadingView(step: _loadingStep, isFootball: widget.match.sport == 'football')
           : _error != null
               ? _ErrorView(error: _error!, match: widget.match, pred: widget.pred)
               : _AnalysisView(data: _data!, match: widget.match, pred: widget.pred),
@@ -112,7 +120,8 @@ class _ProAnalysisScreenState extends State<ProAnalysisScreen> {
 
 class _LoadingView extends StatefulWidget {
   final String step;
-  const _LoadingView({required this.step});
+  final bool isFootball;
+  const _LoadingView({required this.step, this.isFootball = false});
   @override
   State<_LoadingView> createState() => _LoadingViewState();
 }
@@ -169,7 +178,9 @@ class _LoadingViewState extends State<_LoadingView>
               style: GoogleFonts.jetBrainsMono(fontSize: 12, color: kMuted)),
           const SizedBox(height: 24),
           Text(
-            'Consultando MLB Stats API · Clima · IA',
+            widget.isFootball
+                ? 'Rankings FIFA · Motor Bayesiano · IA'
+                : 'Consultando MLB Stats API · Clima · IA',
             style: GoogleFonts.dmSans(fontSize: 11, color: kMuted.withAlpha(120)),
           ),
         ]),
@@ -209,6 +220,7 @@ class _AnalysisView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isFootball = match.sport == 'football';
     final narrative = (data['narrative'] as Map?) ?? {};
     final motor     = (data['motor'] as Map?) ?? {};
     final homeRec   = (data['home_record'] as Map?) ?? {};
@@ -239,19 +251,21 @@ class _AnalysisView extends StatelessWidget {
           ),
         const SizedBox(height: 10),
 
-        // Records de los equipos
-        _ProSection(
-          icon: '🏆',
-          color: kGold,
-          title: 'RECORDS 2026',
-          child: _RecordsGrid(
-            homeName: match.homeTeam,
-            awayName: match.awayTeam,
-            homeRecord: homeRec,
-            awayRecord: awayRec,
+        // Records de los equipos — se oculta para fútbol si no hay datos W-L
+        if (!(isFootball && homeRec.isEmpty)) ...[
+          _ProSection(
+            icon: '🏆',
+            color: kGold,
+            title: 'RECORDS 2026',
+            child: _RecordsGrid(
+              homeName: match.homeTeam,
+              awayName: match.awayTeam,
+              homeRecord: homeRec,
+              awayRecord: awayRec,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
+        ],
 
         // Pitchers detalle
         if (hpStats.isNotEmpty || apStats.isNotEmpty)
@@ -335,8 +349,9 @@ class _ProHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final home    = match.homeTeam.split(' ').last;
-    final away    = match.awayTeam.split(' ').last;
+    final isFootball = match.sport == 'football';
+    final home    = isFootball ? match.homeTeam : match.homeTeam.split(' ').last;
+    final away    = isFootball ? match.awayTeam : match.awayTeam.split(' ').last;
     final homePct = motor['home_win_pct'];
     final awayPct = motor['away_win_pct'];
 
@@ -365,26 +380,35 @@ class _ProHero extends StatelessWidget {
         ]),
         const SizedBox(height: 16),
         Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          Column(children: [
+          Expanded(child: Column(children: [
             Text(home.toUpperCase(),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.bebasNeue(fontSize: 28, color: kText, letterSpacing: 2)),
             if (homePct != null)
               Text('${homePct}%',
                   style: GoogleFonts.jetBrainsMono(fontSize: 13,
                       color: homePct > awayPct ? kAccent : kMuted,
                       fontWeight: FontWeight.w700)),
-          ]),
-          Text('VS',
-              style: GoogleFonts.bebasNeue(fontSize: 18, color: kMuted, letterSpacing: 3)),
-          Column(children: [
+          ])),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text('VS',
+                style: GoogleFonts.bebasNeue(fontSize: 18, color: kMuted, letterSpacing: 3)),
+          ),
+          Expanded(child: Column(children: [
             Text(away.toUpperCase(),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.bebasNeue(fontSize: 28, color: kText, letterSpacing: 2)),
             if (awayPct != null)
               Text('${awayPct}%',
                   style: GoogleFonts.jetBrainsMono(fontSize: 13,
                       color: awayPct > homePct ? kAccent2 : kMuted,
                       fontWeight: FontWeight.w700)),
-          ]),
+          ])),
         ]),
       ]),
     );
