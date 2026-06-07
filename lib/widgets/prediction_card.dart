@@ -243,7 +243,7 @@ class _HeroSection extends StatelessWidget {
     final isLVBP      = match.sport == 'baseball_lvbp';
     final isBaseballLike = isBaseball || isLVBP;
     // LVBP es béisbol → sin empate; fútbol venezolano → con empate (igual que fútbol)
-    final noDraw = isBasketball || isNFL || isLVBP;
+    final noDraw = isBaseball || isBasketball || isNFL || isLVBP;
     final home   = match.homeTeam;
     final away   = match.awayTeam;
     // Para béisbol/LVBP: separar ciudad del nombre del equipo
