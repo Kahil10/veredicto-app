@@ -32,20 +32,52 @@ class _ProAnalysisScreenState extends State<ProAnalysisScreen> {
 
   Future<void> _load() async {
     final token = context.read<AuthProvider>().token;
-    final isFootball = widget.match.sport == 'football';
+    final sport = widget.match.sport;
+    final isFootball = sport == 'football' || sport == 'football_ven';
+    final isBasketball = sport == 'basketball';
+    final isNFL = sport == 'american_football';
+    final isLVBP = sport == 'baseball_lvbp';
     final steps = isFootball
-        ? [
-            'Consultando datos Copa del Mundo...',
-            'Obteniendo Rankings FIFA...',
-            'Analizando probabilidades con IA...',
-            'Generando análisis...',
-          ]
-        : [
-            'Consultando MLB Stats API...',
-            'Obteniendo standings y pitcher stats...',
-            'Consultando clima del estadio...',
-            'Generando análisis con IA...',
-          ];
+        ? (sport == 'football_ven'
+            ? [
+                'Consultando datos Primera División venezolana...',
+                'Calculando probabilidades con motor Bayesiano...',
+                'Analizando con IA...',
+                'Generando análisis...',
+              ]
+            : [
+                'Consultando datos Copa del Mundo...',
+                'Obteniendo Rankings FIFA...',
+                'Analizando probabilidades con IA...',
+                'Generando análisis...',
+              ])
+        : (isBasketball
+            ? [
+                'Consultando datos NBA...',
+                'Obteniendo records de temporada...',
+                'Analizando con IA...',
+                'Generando análisis...',
+              ]
+            : isNFL
+                ? [
+                    'Consultando datos NFL...',
+                    'Obteniendo records de temporada...',
+                    'Analizando con IA...',
+                    'Generando análisis...',
+                  ]
+                : isLVBP
+                    ? [
+                        'Consultando datos LVBP...',
+                        'Analizando estadísticas de la liga...',
+                        'Generando análisis con IA...',
+                        'Preparando análisis...',
+                      ]
+                    : [
+                        'Consultando MLB Stats API...',
+                        'Obteniendo standings y pitcher stats...',
+                        'Consultando clima del estadio...',
+                        'Generando análisis con IA...',
+                      ]);
 
     // Simular pasos de carga
     for (final step in steps) {
