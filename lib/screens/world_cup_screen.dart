@@ -1,8 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import '../core/api_client.dart';
 import '../core/config.dart';
 import '../core/theme.dart';
+import '../models/match_model.dart';
+import '../providers/auth_provider.dart';
+import 'match_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modelos ligeros
@@ -417,14 +422,21 @@ class _DataCell extends StatelessWidget {
 // Fila de partido
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MatchRow extends StatelessWidget {
+class _MatchRow extends StatefulWidget {
   final _Match match;
 
   const _MatchRow({required this.match});
 
+  @override
+  State<_MatchRow> createState() => _MatchRowState();
+}
+
+class _MatchRowState extends State<_MatchRow> {
+  bool _loading = false;
+
   DateTime get _localTime {
     try {
-      return DateTime.parse(match.kickoff).toUtc().toLocal();
+      return DateTime.parse(widget.match.kickoff).toUtc().toLocal();
     } catch (_) {
       return DateTime.now();
     }
@@ -447,7 +459,7 @@ class _MatchRow extends StatelessWidget {
   }
 
   String get _statusLabel {
-    switch (match.status) {
+    switch (widget.match.status) {
       case 'FT':
         return 'FIN';
       case 'NS':
@@ -458,12 +470,12 @@ class _MatchRow extends StatelessWidget {
       case 'ET':
         return 'EN VIVO';
       default:
-        return match.status;
+        return widget.match.status;
     }
   }
 
   Color get _statusColor {
-    switch (match.status) {
+    switch (widget.match.status) {
       case 'FT':
         return kMuted;
       case 'LIVE':
@@ -477,83 +489,125 @@ class _MatchRow extends StatelessWidget {
   }
 
   bool get _hasScore =>
-      match.homeScore != null && match.awayScore != null;
+      widget.match.homeScore != null && widget.match.awayScore != null;
+
+  Future<void> _onTap() async {
+    setState(() => _loading = true);
+    try {
+      final token = context.read<AuthProvider>().token;
+      final data = await ApiClient(token: token)
+          .get('/api/matches/${widget.match.id}');
+      final fullMatch = MatchModel.fromJson(data as Map<String, dynamic>);
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MatchDetailScreen(match: fullMatch),
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo cargar el partido')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kBorder),
-      ),
-      child: Row(
-        children: [
-          // Fecha
-          SizedBox(
-            width: 42,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_dateLabel,
-                    style: jetMono(10, color: kMuted)),
-                const SizedBox(height: 2),
-                Text(
-                  _statusLabel,
-                  style: jetMono(11, color: _statusColor,
-                      weight: FontWeight.w700),
+    return GestureDetector(
+      onTap: _loading ? null : _onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: kBorder),
+        ),
+        child: _loading
+            ? const SizedBox(
+                height: 48,
+                child: Center(
+                  child: CircularProgressIndicator(
+                      color: kAccent, strokeWidth: 2),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Equipo local
-          Expanded(
-            child: Text(
-              match.home,
-              style: dmSans(13, color: kText, weight: FontWeight.w600),
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Marcador o separador
-          _hasScore
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${match.homeScore}',
-                      style: jetMono(15, color: kText, weight: FontWeight.w700),
+              )
+            : Row(
+                children: [
+                  // Fecha
+                  SizedBox(
+                    width: 42,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_dateLabel, style: jetMono(10, color: kMuted)),
+                        const SizedBox(height: 2),
+                        Text(
+                          _statusLabel,
+                          style: jetMono(11,
+                              color: _statusColor, weight: FontWeight.w700),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('–',
-                          style: jetMono(13, color: kMuted)),
+                  ),
+                  const SizedBox(width: 12),
+                  // Equipo local
+                  Expanded(
+                    child: Text(
+                      widget.match.home,
+                      style: dmSans(13,
+                          color: kText, weight: FontWeight.w600),
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      '${match.awayScore}',
-                      style: jetMono(15, color: kText, weight: FontWeight.w700),
+                  ),
+                  const SizedBox(width: 10),
+                  // Marcador o separador
+                  _hasScore
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${widget.match.homeScore}',
+                              style: jetMono(15,
+                                  color: kText, weight: FontWeight.w700),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 5),
+                              child: Text('–',
+                                  style: jetMono(13, color: kMuted)),
+                            ),
+                            Text(
+                              '${widget.match.awayScore}',
+                              style: jetMono(15,
+                                  color: kText, weight: FontWeight.w700),
+                            ),
+                          ],
+                        )
+                      : Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text('vs',
+                              style: jetMono(11, color: kMuted)),
+                        ),
+                  const SizedBox(width: 10),
+                  // Equipo visitante
+                  Expanded(
+                    child: Text(
+                      widget.match.away,
+                      style: dmSans(13,
+                          color: kText, weight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Text('vs',
-                      style: jetMono(11, color: kMuted)),
-                ),
-          const SizedBox(width: 10),
-          // Equipo visitante
-          Expanded(
-            child: Text(
-              match.away,
-              style: dmSans(13, color: kText, weight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+                  ),
+                ],
+              ),
       ),
     );
   }
