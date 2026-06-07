@@ -60,6 +60,8 @@ String? footballFlagUrl(String teamName) {
     'Russia': 'ru',
     'Belarus': 'by',
     'Bosnia and Herzegovina': 'ba',
+    'Bosnia-Herzegovina': 'ba',
+    'Bosnia & Herzegovina': 'ba',
     'North Macedonia': 'mk',
     'Montenegro': 'me',
     'Kosovo': 'xk',
@@ -145,6 +147,25 @@ String? footballFlagUrl(String teamName) {
     'New Zealand': 'nz',
     'Fiji': 'fj',
     'Papua New Guinea': 'pg',
+    // Caribe / Antillas
+    'Haiti': 'ht',
+    'Cuba': 'cu',
+    'Dominican Republic': 'do',
+    'Puerto Rico': 'pr',
+    'Jamaica': 'jm',
+    'Trinidad and Tobago': 'tt',
+    'Curaçao': 'cw',
+    'Curacao': 'cw',
+    // Territorios adicionales
+    'Cape Verde': 'cv',
+    'Cape Verde Islands': 'cv',
+    'Cabo Verde': 'cv',
+    // Congo
+    'Congo': 'cg',
+    'Congo DR': 'cd',
+    'DR Congo': 'cd',
+    'Democratic Republic of Congo': 'cd',
+    'Republic of Congo': 'cg',
   };
 
   final code = codes[teamName];

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/flags.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -16,16 +17,45 @@ class _TeamLogo extends StatelessWidget {
   final String teamName;
   final double size;
   final bool isHome;
+  final bool isFootball;
 
   const _TeamLogo({
     required this.teamId,
     required this.teamName,
     this.size = 56,
     this.isHome = false,
+    this.isFootball = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final flagUrl = isFootball ? footballFlagUrl(teamName) : null;
+
+    Widget logoChild;
+    if (flagUrl != null) {
+      // Fútbol: bandera PNG de flagcdn.com
+      logoChild = ClipOval(
+        child: Image.network(
+          flagUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (_, child, prog) =>
+              prog == null ? child : _initials(teamName, size),
+          errorBuilder: (_, __, ___) => _initials(teamName, size),
+        ),
+      );
+    } else if (!isFootball && teamId != null) {
+      // Béisbol: logo oficial MLB
+      logoChild = ClipOval(
+        child: SvgPicture.network(
+          'https://www.mlbstatic.com/team-logos/$teamId.svg',
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => _initials(teamName, size),
+        ),
+      );
+    } else {
+      logoChild = _initials(teamName, size);
+    }
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -37,15 +67,7 @@ class _TeamLogo extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: isHome ? kAccent.withAlpha(60) : kAccent2.withAlpha(40)),
           ),
-          child: teamId != null
-              ? ClipOval(
-                  child: SvgPicture.network(
-                    'https://www.mlbstatic.com/team-logos/$teamId.svg',
-                    fit: BoxFit.contain,
-                    placeholderBuilder: (_) => _initials(teamName, size),
-                  ),
-                )
-              : _initials(teamName, size),
+          child: logoChild,
         ),
         if (isHome)
           Positioned(
@@ -241,6 +263,7 @@ class _HeroSection extends StatelessWidget {
                         teamName: home,
                         size: 62,
                         isHome: true,
+                        isFootball: !isBaseball,
                       ),
                       const SizedBox(height: 8),
                       Text(homeCity.toUpperCase(),
@@ -271,6 +294,7 @@ class _HeroSection extends StatelessWidget {
                         teamName: away,
                         size: 62,
                         isHome: false,
+                        isFootball: !isBaseball,
                       ),
                       const SizedBox(height: 8),
                       Text(awayCity.toUpperCase(),
