@@ -47,8 +47,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${match.homeTeam.split(' ').first} vs '
-            '${match.awayTeam.split(' ').first}'),
+        title: Text(
+          '${match.homeTeam} vs ${match.awayTeam}',
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: kSurface,
         actions: [
           // Contador de análisis para usuarios FREE
@@ -441,6 +443,7 @@ class _BenefitRow extends StatelessWidget {
 
 String _buildVeraContext(MatchModel match, PredictionModel? pred) {
   final buf = StringBuffer();
+  final isFootball = match.sport == 'football';
 
   // Cabecera del partido
   final status = match.isLive
@@ -466,13 +469,18 @@ String _buildVeraContext(MatchModel match, PredictionModel? pred) {
   buf.writeln('${match.homeTeam}: ${pred.homeWinPct.toStringAsFixed(1)}%');
   if (pred.drawPct > 0) buf.writeln('Empate: ${pred.drawPct.toStringAsFixed(1)}%');
   buf.writeln('${match.awayTeam}: ${pred.awayWinPct.toStringAsFixed(1)}%');
-  buf.writeln('xC local: ${pred.homeXg.toStringAsFixed(2)} carreras esperadas');
-  buf.writeln('xC visitante: ${pred.awayXg.toStringAsFixed(2)} carreras esperadas');
+  if (isFootball) {
+    buf.writeln('xG local: ${pred.homeXg.toStringAsFixed(2)} goles esperados');
+    buf.writeln('xG visitante: ${pred.awayXg.toStringAsFixed(2)} goles esperados');
+  } else {
+    buf.writeln('xC local: ${pred.homeXg.toStringAsFixed(2)} carreras esperadas');
+    buf.writeln('xC visitante: ${pred.awayXg.toStringAsFixed(2)} carreras esperadas');
+  }
   buf.writeln('Confianza del motor: ${pred.confidence}% (${pred.confidenceLabel})');
   buf.writeln();
 
-  // Pitchers
-  if (pred.homePitcherName != null || pred.awayPitcherName != null) {
+  // Pitchers (solo béisbol)
+  if (!isFootball && (pred.homePitcherName != null || pred.awayPitcherName != null)) {
     buf.writeln('--- PITCHERS TITULARES ---');
     if (pred.homePitcherName != null) {
       buf.write('Local — ${pred.homePitcherName}');
@@ -489,28 +497,45 @@ String _buildVeraContext(MatchModel match, PredictionModel? pred) {
     buf.writeln();
   }
 
+  // Rankings FIFA (solo fútbol)
+  if (isFootball) {
+    final rankingData = pred.variablesUsadas
+        .where((v) => v.contains('Ranking FIFA'))
+        .toList();
+    if (rankingData.isNotEmpty) {
+      buf.writeln('--- RANKINGS FIFA 2026 ---');
+      for (final r in rankingData) {
+        buf.writeln('· $r');
+      }
+      buf.writeln();
+    }
+  }
+
   // H2H
   if ((pred.h2hJuegos ?? 0) >= 2) {
-    buf.writeln('--- HEAD-TO-HEAD (últimos ${pred.h2hJuegos} enfrentamientos) ---');
-    buf.writeln('${match.homeTeam}: ${pred.h2hVictoriasLocal ?? 0} victorias | ${(pred.h2hRunsLocalAvg ?? 0).toStringAsFixed(1)} C/jgo promedio');
-    buf.writeln('${match.awayTeam}: ${pred.h2hVictoriasVisit ?? 0} victorias | ${(pred.h2hRunsVisitAvg ?? 0).toStringAsFixed(1)} C/jgo promedio');
+    final avgLabel = isFootball ? 'G/pdo' : 'C/jgo';
+    buf.writeln('--- CARA A CARA (últimos ${pred.h2hJuegos} enfrentamientos) ---');
+    buf.writeln('${match.homeTeam}: ${pred.h2hVictoriasLocal ?? 0} victorias | ${(pred.h2hRunsLocalAvg ?? 0).toStringAsFixed(1)} $avgLabel promedio');
+    buf.writeln('${match.awayTeam}: ${pred.h2hVictoriasVisit ?? 0} victorias | ${(pred.h2hRunsVisitAvg ?? 0).toStringAsFixed(1)} $avgLabel promedio');
     buf.writeln();
   }
 
   // O/U
   if (pred.ouLine != null) {
-    buf.writeln('--- OVER/UNDER ---');
-    buf.writeln('Línea: ${pred.ouLine} carreras totales');
-    buf.writeln('OVER: ${pred.overPct?.toStringAsFixed(1) ?? "—"}%');
-    buf.writeln('UNDER: ${pred.underPct?.toStringAsFixed(1) ?? "—"}%');
+    final unitLabel = isFootball ? 'goles totales' : 'carreras totales';
+    final projLabel = isFootball ? 'goles' : 'carreras';
+    buf.writeln('--- MÁS/MENOS ---');
+    buf.writeln('Línea: ${pred.ouLine} $unitLabel');
+    buf.writeln('MÁS: ${pred.overPct?.toStringAsFixed(1) ?? "—"}%');
+    buf.writeln('MENOS: ${pred.underPct?.toStringAsFixed(1) ?? "—"}%');
     if (pred.projectedTotal != null) {
-      buf.writeln('Proyectado por el motor: ${pred.projectedTotal!.toStringAsFixed(1)} carreras');
+      buf.writeln('Proyectado por el motor: ${pred.projectedTotal!.toStringAsFixed(1)} $projLabel');
     }
     buf.writeln();
   }
 
-  // Ponches
-  if (pred.homeKLine != null || pred.awayKLine != null) {
+  // Ponches (solo béisbol)
+  if (!isFootball && (pred.homeKLine != null || pred.awayKLine != null)) {
     buf.writeln('--- PONCHES DEL PITCHER (prop bet) ---');
     if (pred.homeKLine != null) {
       buf.writeln('${pred.homePitcherName ?? match.homeTeam}: línea ${pred.homeKLine} Ks | OVER ${pred.homeKOverPct?.toStringAsFixed(1)}% | UNDER ${pred.homeKUnderPct?.toStringAsFixed(1)}% | prom. ${pred.homeKMu} K/jgo');

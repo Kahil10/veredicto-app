@@ -91,7 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
             _ContextBanner(context: widget.matchContext!),
           Expanded(
             child: chat.messages.isEmpty && !chat.sending
-                ? const _EmptyState()
+                ? _EmptyState(matchContext: widget.matchContext)
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
@@ -164,7 +164,13 @@ class _ContextBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          const Icon(Icons.sports_baseball, color: kPurple, size: 14),
+          Icon(
+            this.context.contains('Deporte: football')
+                ? Icons.sports_soccer
+                : Icons.sports_baseball,
+            color: kPurple,
+            size: 14,
+          ),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -181,7 +187,10 @@ class _ContextBanner extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  final String? matchContext;
+  const _EmptyState({this.matchContext});
+
+  bool get _isFootball => matchContext?.contains('Deporte: football') == true;
 
   @override
   Widget build(BuildContext context) {
@@ -207,11 +216,17 @@ class _EmptyState extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             alignment: WrapAlignment.center,
-            children: const [
-              _SuggestionChip('¿Cómo funciona el análisis?'),
-              _SuggestionChip('¿Qué significa confianza baja?'),
-              _SuggestionChip('¿Cuál equipo favorito hoy?'),
-            ],
+            children: _isFootball
+                ? const [
+                    _SuggestionChip('¿Quién gana este partido?'),
+                    _SuggestionChip('¿Qué dice el ranking FIFA?'),
+                    _SuggestionChip('¿Es posible el empate?'),
+                  ]
+                : const [
+                    _SuggestionChip('¿Cómo funciona el análisis?'),
+                    _SuggestionChip('¿Qué significa confianza baja?'),
+                    _SuggestionChip('¿Cuál equipo favorito hoy?'),
+                  ],
           ),
         ],
       ),
