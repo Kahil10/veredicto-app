@@ -37,6 +37,7 @@ class MatchCard extends StatelessWidget {
                   Expanded(
                     child: _TeamColumn(
                       name: match.homeTeam,
+                      sport: match.sport,
                       score: match.homeScore,
                       isWinner: match.isFinished &&
                           match.homeScore != null &&
@@ -49,6 +50,7 @@ class MatchCard extends StatelessWidget {
                   Expanded(
                     child: _TeamColumn(
                       name: match.awayTeam,
+                      sport: match.sport,
                       score: match.awayScore,
                       isWinner: match.isFinished &&
                           match.homeScore != null &&
@@ -86,6 +88,7 @@ class MatchCard extends StatelessWidget {
 
 class _TeamColumn extends StatelessWidget {
   final String name;
+  final String sport;
   final int? score;
   final bool isWinner;
   final bool isRight;
@@ -93,6 +96,7 @@ class _TeamColumn extends StatelessWidget {
 
   const _TeamColumn({
     required this.name,
+    this.sport = 'football',
     this.score,
     this.isWinner = false,
     this.isRight = false,
@@ -101,17 +105,22 @@ class _TeamColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNBAorNFL =
+        sport == 'basketball' || sport == 'american_football';
+    final flagUrl = sport == 'football' ? footballFlagUrl(name) : null;
+
     return Column(
       crossAxisAlignment:
           isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        if (footballFlagUrl(name) != null)
+        // Fútbol internacional: bandera de país
+        if (flagUrl != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(3),
               child: Image.network(
-                footballFlagUrl(name)!,
+                flagUrl,
                 width: 40,
                 height: 27,
                 fit: BoxFit.cover,
@@ -119,6 +128,20 @@ class _TeamColumn extends StatelessWidget {
                     prog == null ? child : const SizedBox(width: 40, height: 27),
                 errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
+            ),
+          ),
+        // NBA / NFL: crest PNG desde ESPN CDN
+        if (isNBAorNFL && crestUrl != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Image.network(
+              crestUrl!,
+              width: 36,
+              height: 36,
+              fit: BoxFit.contain,
+              loadingBuilder: (_, child, prog) =>
+                  prog == null ? child : const SizedBox(width: 36, height: 36),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),
         Text(
@@ -248,17 +271,32 @@ class _SportChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBaseball = sport == 'baseball';
+    final String emoji;
+    final Color chipColor;
+    switch (sport) {
+      case 'baseball':
+        emoji = '⚾';
+        chipColor = const Color(0xFF0ea5e9);
+        break;
+      case 'basketball':
+        emoji = '🏀';
+        chipColor = const Color(0xFFf97316);
+        break;
+      case 'american_football':
+        emoji = '🏈';
+        chipColor = const Color(0xFF8b5cf6);
+        break;
+      default:
+        emoji = '⚽';
+        chipColor = kPurple;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: (isBaseball ? const Color(0xFF0ea5e9) : kPurple).withAlpha(30),
+        color: chipColor.withAlpha(30),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        isBaseball ? '⚾' : '⚽',
-        style: const TextStyle(fontSize: 12),
-      ),
+      child: Text(emoji, style: const TextStyle(fontSize: 12)),
     );
   }
 }

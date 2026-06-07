@@ -186,21 +186,63 @@ class _ControlBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         children: [
-          // Sport tabs
-          Row(
-            children: [
-              _SportTab(
-                label: '⚾ Béisbol',
-                active: provider.sport == 'baseball',
-                onTap: () => provider.setSport('baseball', token: token),
-              ),
-              const SizedBox(width: 8),
-              _SportTab(
-                label: '⚽ Fútbol',
-                active: provider.sport == 'football',
-                onTap: () => provider.setSport('football', token: token),
-              ),
-            ],
+          // Sport tabs — scroll horizontal para caber todos
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _SportTab(
+                  label: '⚾ MLB',
+                  active: provider.sport == 'baseball',
+                  onTap: () => provider.setSport('baseball', token: token),
+                ),
+                const SizedBox(width: 6),
+                _SportTab(
+                  label: '⚽ Fútbol',
+                  active: provider.sport == 'football',
+                  onTap: () => provider.setSport('football', token: token),
+                ),
+                const SizedBox(width: 6),
+                _SportTab(
+                  label: '🏀 NBA',
+                  active: provider.sport == 'basketball',
+                  onTap: () => provider.setSport('basketball', token: token),
+                ),
+                const SizedBox(width: 6),
+                _SportTab(
+                  label: '🏈 NFL',
+                  active: provider.sport == 'american_football',
+                  onTap: () =>
+                      provider.setSport('american_football', token: token),
+                ),
+                const SizedBox(width: 6),
+                _SportTab(
+                  label: '⚾ LVBP',
+                  active: false,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'LVBP — datos sincronizando, prueba mañana'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 6),
+                _SportTab(
+                  label: '🇻🇪 VEN',
+                  active: false,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Fútbol venezolano — datos sincronizando, prueba mañana'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 10),
           // Date picker row
@@ -483,6 +525,19 @@ class _AccuracyBannerState extends State<_AccuracyBanner> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+String _sportEmoji(String sport) {
+  switch (sport) {
+    case 'baseball':
+      return '⚾';
+    case 'basketball':
+      return '🏀';
+    case 'american_football':
+      return '🏈';
+    default:
+      return '⚽';
+  }
+}
+
 class _MatchList extends StatelessWidget {
   final MatchesProvider provider;
   final String? token;
@@ -528,7 +583,7 @@ class _MatchList extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(provider.sport == 'baseball' ? '⚾' : '⚽',
+                  Text(_sportEmoji(provider.sport),
                       style: const TextStyle(fontSize: 48)),
                   const SizedBox(height: 16),
                   const Text('Sin partidos este día',

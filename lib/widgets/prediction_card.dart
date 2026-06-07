@@ -18,6 +18,8 @@ class _TeamLogo extends StatelessWidget {
   final double size;
   final bool isHome;
   final bool isFootball;
+  final String? crestUrl;
+  final String sport;
 
   const _TeamLogo({
     required this.teamId,
@@ -25,6 +27,8 @@ class _TeamLogo extends StatelessWidget {
     this.size = 56,
     this.isHome = false,
     this.isFootball = false,
+    this.crestUrl,
+    this.sport = 'baseball',
   });
 
   @override
@@ -38,6 +42,18 @@ class _TeamLogo extends StatelessWidget {
         child: Image.network(
           flagUrl,
           fit: BoxFit.cover,
+          loadingBuilder: (_, child, prog) =>
+              prog == null ? child : _initials(teamName, size),
+          errorBuilder: (_, __, ___) => _initials(teamName, size),
+        ),
+      );
+    } else if ((sport == 'basketball' || sport == 'american_football') &&
+        crestUrl != null) {
+      // NBA / NFL: PNG desde ESPN CDN
+      logoChild = ClipOval(
+        child: Image.network(
+          crestUrl!,
+          fit: BoxFit.contain,
           loadingBuilder: (_, child, prog) =>
               prog == null ? child : _initials(teamName, size),
           errorBuilder: (_, __, ___) => _initials(teamName, size),
@@ -114,6 +130,15 @@ class PredictionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final match      = pred.match;
     final isBaseball = match.sport == 'baseball';
+    final isBasketball = match.sport == 'basketball';
+    final isNFL      = match.sport == 'american_football';
+
+    // Etiqueta O/U adaptada por deporte
+    final String ouUnit = (isBasketball || isNFL)
+        ? 'puntos'
+        : isBaseball
+            ? 'carreras'
+            : 'goles';
 
     return Column(
       children: [
@@ -129,7 +154,7 @@ class PredictionCard extends StatelessWidget {
         _ProButton(pred: pred, match: match),
         const SizedBox(height: 12),
 
-        // Pitchers
+        // Pitchers (solo béisbol)
         if (isBaseball && pred.homePitcherName != null) ...[
           _SectionCard(
             icon: '⚾',
@@ -141,7 +166,7 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Head-to-Head
+        // Head-to-Head (solo béisbol)
         if (isBaseball && (pred.h2hJuegos ?? 0) >= 2) ...[
           _SectionCard(
             icon: '📊',
@@ -153,7 +178,7 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Ponches
+        // Ponches (solo béisbol)
         if (isBaseball && (pred.homeKLine != null || pred.awayKLine != null)) ...[
           _SectionCard(
             icon: '🎯',
@@ -165,14 +190,14 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
-        // Over/Under
-        if (isBaseball && pred.ouLine != null) ...[
+        // Over/Under — béisbol + basketball/NFL si viene línea
+        if (pred.ouLine != null) ...[
           _SectionCard(
             icon: '⚖️',
             iconColor: kAccent2,
             title: 'MÁS O MENOS',
-            subtitle: '¿Anotan más o menos de X carreras en total?',
-            child: _OUContent(pred: pred),
+            subtitle: '¿Anotan más o menos de X $ouUnit en total?',
+            child: _OUContent(pred: pred, ouUnit: ouUnit),
           ),
           const SizedBox(height: 10),
         ],
@@ -194,16 +219,37 @@ class _HeroSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final match  = pred.match;
     final isBaseball = match.sport == 'baseball';
+    final isBasketball = match.sport == 'basketball';
+    final isNFL  = match.sport == 'american_football';
+    final noDraw = isBasketball || isNFL;
     final home   = match.homeTeam;
     final away   = match.awayTeam;
     // Para béisbol: separar ciudad del nombre del equipo (ej. "New York" / "Yankees")
-    // Para fútbol: mostrar nombre completo como equipo (ej. "South Africa")
+    // Para fútbol/basketball/NFL: mostrar nombre completo
     final homeParts = home.split(' ');
     final awayParts = away.split(' ');
     final homeCity = isBaseball && homeParts.length > 1 ? homeParts.sublist(0, homeParts.length - 1).join(' ') : '';
     final homeTeam = isBaseball ? homeParts.last : home;
     final awayCity = isBaseball && awayParts.length > 1 ? awayParts.sublist(0, awayParts.length - 1).join(' ') : '';
     final awayTeam = isBaseball ? awayParts.last : away;
+
+    // Etiqueta del tag superior según deporte
+    final String sportTag = isBaseball
+        ? '⚾ MLB · ANÁLISIS ÉLITE'
+        : isBasketball
+            ? '🏀 NBA · ANÁLISIS ÉLITE'
+            : isNFL
+                ? '🏈 NFL · ANÁLISIS ÉLITE'
+                : '⚽ Fútbol · ANÁLISIS ÉLITE';
+
+    // Watermark emoji
+    final String watermarkEmoji = isBaseball
+        ? '⚾'
+        : isBasketball
+            ? '🏀'
+            : isNFL
+                ? '🏈'
+                : '⚽';
 
     // Pick principal basado en probabilidades
     final homeWin  = pred.homeWinPct;
@@ -227,7 +273,7 @@ class _HeroSection extends StatelessWidget {
           Positioned(
             right: -10,
             top: -10,
-            child: Text(match.sport == 'baseball' ? '⚾' : '⚽',
+            child: Text(watermarkEmoji,
                 style: const TextStyle(fontSize: 110, color: Colors.white)
                     .copyWith(color: Colors.white.withAlpha(10))),
           ),
@@ -241,9 +287,7 @@ class _HeroSection extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _Tag(
-                      match.sport == 'baseball' ? '⚾ MLB · ANÁLISIS ÉLITE' : '⚽ Fútbol · ANÁLISIS ÉLITE',
-                      color: kAccent, textColor: Colors.black),
+                    _Tag(sportTag, color: kAccent, textColor: Colors.black),
                     _Tag(
                       '${match.kickoff.day} ${_mes(match.kickoff.month)} · ${match.kickoff.hour}:${match.kickoff.minute.toString().padLeft(2,'0')}',
                       color: kSurface2,
@@ -263,7 +307,9 @@ class _HeroSection extends StatelessWidget {
                         teamName: home,
                         size: 62,
                         isHome: true,
-                        isFootball: !isBaseball,
+                        isFootball: match.sport == 'football',
+                        crestUrl: match.homeTeamCrest,
+                        sport: match.sport,
                       ),
                       const SizedBox(height: 8),
                       Text(homeCity.toUpperCase(),
@@ -274,7 +320,7 @@ class _HeroSection extends StatelessWidget {
                               fontSize: 22, color: kText, letterSpacing: 1)),
                     ]),
 
-                    // VS
+                    // VS + porcentajes
                     Expanded(
                       child: Column(children: [
                         Text('VS',
@@ -284,6 +330,11 @@ class _HeroSection extends StatelessWidget {
                           '${pred.homeWinPct.toStringAsFixed(0)}% — ${pred.awayWinPct.toStringAsFixed(0)}%',
                           style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted),
                         ),
+                        if (!noDraw)
+                          Text(
+                            'Empate: ${pred.drawPct.toStringAsFixed(0)}%',
+                            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted),
+                          ),
                       ]),
                     ),
 
@@ -294,7 +345,9 @@ class _HeroSection extends StatelessWidget {
                         teamName: away,
                         size: 62,
                         isHome: false,
-                        isFootball: !isBaseball,
+                        isFootball: match.sport == 'football',
+                        crestUrl: match.awayTeamCrest,
+                        sport: match.sport,
                       ),
                       const SizedBox(height: 8),
                       Text(awayCity.toUpperCase(),
@@ -438,7 +491,10 @@ class _ConfidenceBarState extends State<_ConfidenceBar>
         Text(
           widget.pred.match.sport == 'baseball'
               ? 'Calculado con 10,000 simulaciones del partido'
-              : 'Motor Bayesiano · Rankings FIFA · 10,000 simulaciones',
+              : (widget.pred.match.sport == 'basketball' ||
+                      widget.pred.match.sport == 'american_football')
+                  ? 'Motor Estadístico · Temporada actual · 10,000 simulaciones'
+                  : 'Motor Bayesiano · Rankings FIFA · 10,000 simulaciones',
           style: GoogleFonts.jetBrainsMono(fontSize: 10, color: kMuted),
         ),
       ]),
@@ -822,7 +878,8 @@ class _PropRow extends StatelessWidget {
 
 class _OUContent extends StatelessWidget {
   final PredictionModel pred;
-  const _OUContent({required this.pred});
+  final String ouUnit;
+  const _OUContent({required this.pred, this.ouUnit = 'carreras'});
 
   @override
   Widget build(BuildContext context) {
@@ -832,7 +889,10 @@ class _OUContent extends StatelessWidget {
     final proj  = pred.projectedTotal;
     final isOver = over > under;
     final pickColor = isOver ? kGreen : kAccent2;
-    final pickLabel = isOver ? '🔥  MÁS DE $line CARRERAS' : '❄️  MENOS DE $line CARRERAS';
+    final unitUpper = ouUnit.toUpperCase();
+    final pickLabel = isOver
+        ? '🔥  MÁS DE $line $unitUpper'
+        : '❄️  MENOS DE $line $unitUpper';
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       // Pick destacado
@@ -860,7 +920,7 @@ class _OUContent extends StatelessWidget {
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('LÍNEA', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
           Text('$line', style: GoogleFonts.bebasNeue(fontSize: 28, color: kText)),
-          Text('carreras totales', style: GoogleFonts.dmSans(fontSize: 9, color: kMuted)),
+          Text('$ouUnit totales', style: GoogleFonts.dmSans(fontSize: 9, color: kMuted)),
         ]),
         if (proj != null)
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -1035,6 +1095,13 @@ class _ProButton extends StatelessWidget {
     final isPremium = user?.isPremiumActive == true ||
         (user?.role.toLowerCase() == 'admin');
 
+    // Subtítulo adaptado por deporte
+    final String proSubtitle = match.sport == 'baseball'
+        ? 'Stats reales MLB · Clima en vivo · Análisis IA'
+        : (match.sport == 'basketball' || match.sport == 'american_football')
+            ? 'Stats temporada · Líneas ESPN · Análisis IA'
+            : 'Stats reales · Motor Bayesiano · Análisis IA';
+
     if (!isPremium) {
       // FREE: botón bloqueado como gancho de conversión
       return Container(
@@ -1059,7 +1126,7 @@ class _ProButton extends StatelessWidget {
             Text('ANÁLISIS PRO',
                 style: GoogleFonts.bebasNeue(
                     fontSize: 16, color: kAccent.withAlpha(150), letterSpacing: 1.5)),
-            Text(match.sport == 'baseball' ? 'Stats reales MLB · Clima en vivo · Análisis IA' : 'Stats reales · Motor Bayesiano · Análisis IA',
+            Text(proSubtitle,
                 style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
           ])),
           Container(
@@ -1114,7 +1181,7 @@ class _ProButton extends StatelessWidget {
             Text('ANÁLISIS PRO',
                 style: GoogleFonts.bebasNeue(
                     fontSize: 16, color: kAccent, letterSpacing: 1.5)),
-            Text(match.sport == 'baseball' ? 'Stats reales MLB · Clima en vivo · Análisis IA' : 'Stats reales · Motor Bayesiano · Análisis IA',
+            Text(proSubtitle,
                 style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
           ])),
           const Icon(Icons.arrow_forward_ios, color: kAccent, size: 14),
