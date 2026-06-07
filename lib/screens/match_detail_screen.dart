@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -29,6 +30,8 @@ class MatchDetailScreen extends StatefulWidget {
 
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
+  Map<String, dynamic>? _lineup;
+  bool _lineupLoading = false;
 
   @override
   void initState() {
@@ -38,7 +41,29 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
       context
           .read<MatchesProvider>()
           .loadPrediction(widget.match.id, token: token);
+      if (widget.match.sport == 'baseball' &&
+          (widget.match.isScheduled || widget.match.isPostponed)) {
+        _fetchLineup();
+      }
     });
+  }
+
+  Future<void> _fetchLineup() async {
+    setState(() => _lineupLoading = true);
+    try {
+      final token = context.read<AuthProvider>().token;
+      final headers = token != null
+          ? {'Authorization': 'Bearer $token'}
+          : <String, String>{};
+      final resp = await http.get(
+        Uri.parse('$kBaseUrl/api/matches/${widget.match.id}/lineup'),
+        headers: headers,
+      );
+      if (resp.statusCode == 200) {
+        setState(() => _lineup = jsonDecode(resp.body));
+      }
+    } catch (_) {}
+    setState(() => _lineupLoading = false);
   }
 
   @override
@@ -176,9 +201,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                   ),
                 ),
               )
-            else if (pred != null)
-              PredictionCard(pred: pred)
-            else
+            else if (pred != null) ...[
+              PredictionCard(pred: pred),
+              if (widget.match.sport == 'baseball' &&
+                  (widget.match.isScheduled || widget.match.isPostponed))
+                _LineupSection(lineup: _lineup, loading: _lineupLoading),
+            ] else
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -234,11 +262,26 @@ class _MatchHeader extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    match.homeTeam,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 16),
+                  child: Column(
+                    children: [
+                      if (match.homeTeamCrest != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: SvgPicture.network(
+                            match.homeTeamCrest!,
+                            width: 48,
+                            height: 48,
+                            placeholderBuilder: (_) =>
+                                const SizedBox(width: 48, height: 48),
+                          ),
+                        ),
+                      Text(
+                        match.homeTeam,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
                 if (match.isLive || match.isFinished)
@@ -273,11 +316,26 @@ class _MatchHeader extends StatelessWidget {
                             fontWeight: FontWeight.w700)),
                   ),
                 Expanded(
-                  child: Text(
-                    match.awayTeam,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 16),
+                  child: Column(
+                    children: [
+                      if (match.awayTeamCrest != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: SvgPicture.network(
+                            match.awayTeamCrest!,
+                            width: 48,
+                            height: 48,
+                            placeholderBuilder: (_) =>
+                                const SizedBox(width: 48, height: 48),
+                          ),
+                        ),
+                      Text(
+                        match.awayTeam,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -769,6 +827,158 @@ class _ShareCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Alineaciones MLB ──────────────────────────────────────────────────────────
+
+class _LineupSection extends StatelessWidget {
+  final Map<String, dynamic>? lineup;
+  final bool loading;
+  const _LineupSection({this.lineup, required this.loading});
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+            child: CircularProgressIndicator(color: kPurple, strokeWidth: 2)),
+      );
+    }
+
+    final homeList =
+        (lineup?['home_lineup'] as List?)?.cast<Map>() ?? [];
+    final awayList =
+        (lineup?['away_lineup'] as List?)?.cast<Map>() ?? [];
+    final published = lineup?['lineup_publicada'] == true;
+    final homeName = lineup?['home_team'] ?? '';
+    final awayName = lineup?['away_team'] ?? '';
+
+    if (!published || (homeList.isEmpty && awayList.isEmpty)) {
+      return Card(
+        margin: const EdgeInsets.only(top: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.people_outline, color: kMuted, size: 20),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Alineaciones pendientes — se publican 1-3h antes del primer out',
+                  style: TextStyle(color: kMuted, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(top: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.people, color: kAccent, size: 18),
+                const SizedBox(width: 8),
+                Text('ALINEACIONES TITULARES',
+                    style: TextStyle(
+                        color: kAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                    child: _LineupTeam(
+                        teamName: homeName,
+                        players: homeList,
+                        isHome: true)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _LineupTeam(
+                        teamName: awayName,
+                        players: awayList,
+                        isHome: false)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LineupTeam extends StatelessWidget {
+  final String teamName;
+  final List<Map> players;
+  final bool isHome;
+  const _LineupTeam(
+      {required this.teamName,
+      required this.players,
+      required this.isHome});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(teamName.split(' ').last,
+            style: const TextStyle(
+                color: kText, fontSize: 12, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        ...players.map((p) {
+          final pos = p['posicion'] ?? '?';
+          final name =
+              (p['nombre'] as String? ?? '').split(' ').last;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: Text('${p['orden']}.',
+                      style:
+                          const TextStyle(color: kMuted, fontSize: 11)),
+                ),
+                Container(
+                  width: 26,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 3, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: kSurface,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(pos,
+                      style: const TextStyle(
+                          color: kMuted,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700),
+                      textAlign: TextAlign.center),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(name,
+                      style:
+                          const TextStyle(color: kText, fontSize: 12),
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }

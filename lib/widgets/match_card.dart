@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import '../core/theme.dart';
 import '../models/match_model.dart';
@@ -41,6 +42,7 @@ class MatchCard extends StatelessWidget {
                           match.homeScore != null &&
                           match.awayScore != null &&
                           match.homeScore! > match.awayScore!,
+                      crestUrl: match.homeTeamCrest,
                     ),
                   ),
                   _ScoreOrTime(match),
@@ -53,6 +55,7 @@ class MatchCard extends StatelessWidget {
                           match.awayScore != null &&
                           match.awayScore! > match.homeScore!,
                       isRight: true,
+                      crestUrl: match.awayTeamCrest,
                     ),
                   ),
                 ],
@@ -86,12 +89,14 @@ class _TeamColumn extends StatelessWidget {
   final int? score;
   final bool isWinner;
   final bool isRight;
+  final String? crestUrl;
 
   const _TeamColumn({
     required this.name,
     this.score,
     this.isWinner = false,
     this.isRight = false,
+    this.crestUrl,
   });
 
   @override
@@ -100,6 +105,16 @@ class _TeamColumn extends StatelessWidget {
       crossAxisAlignment:
           isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
+        if (crestUrl != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: SvgPicture.network(
+              crestUrl!,
+              width: 36,
+              height: 36,
+              placeholderBuilder: (_) => const SizedBox(width: 36, height: 36),
+            ),
+          ),
         Text(
           name,
           style: TextStyle(
@@ -122,6 +137,18 @@ class _ScoreOrTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (match.isPostponed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text('PPD',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kMuted)),
+      );
+    }
     if (match.isLive || match.isFinished) {
       final home = match.homeScore ?? 0;
       final away = match.awayScore ?? 0;
@@ -181,6 +208,17 @@ class _StatusBadge extends StatelessWidget {
                     fontWeight: FontWeight.w700)),
           ],
         ),
+      );
+    }
+    if (match.isPostponed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.orange.withAlpha(40),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Text('POSPUESTO',
+            style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.w600)),
       );
     }
     if (match.isFinished) {

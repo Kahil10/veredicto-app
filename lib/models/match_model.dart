@@ -28,6 +28,8 @@ class MatchModel {
   final String awayTeam;
   final int? homeTeamId;
   final int? awayTeamId;
+  final String? homeTeamCrest;
+  final String? awayTeamCrest;
   final DateTime kickoff;
   final String? venue;
   final String status;
@@ -44,6 +46,8 @@ class MatchModel {
     required this.awayTeam,
     this.homeTeamId,
     this.awayTeamId,
+    this.homeTeamCrest,
+    this.awayTeamCrest,
     required this.kickoff,
     this.venue,
     required this.status,
@@ -61,6 +65,8 @@ class MatchModel {
         awayTeam: j['away_team'],
         homeTeamId: j['home_team_id'] as int?,
         awayTeamId: j['away_team_id'] as int?,
+        homeTeamCrest: j['home_team_crest'] as String?,
+        awayTeamCrest: j['away_team_crest'] as String?,
         kickoff: DateTime.parse(j['kickoff']).toLocal(),
         venue: j['venue'],
         status: j['status'],
@@ -71,5 +77,6 @@ class MatchModel {
 
   bool get isLive => ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].contains(status);
   bool get isFinished => ['FT', 'AET', 'PEN', 'F', 'Final'].contains(status);
+  bool get isPostponed => status == 'PPD';
   bool get isScheduled => status == 'NS';
 }
