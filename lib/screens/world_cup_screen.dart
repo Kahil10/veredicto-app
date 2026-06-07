@@ -422,11 +422,9 @@ class _MatchRow extends StatelessWidget {
 
   const _MatchRow({required this.match});
 
-  // UTC-4 (Venezuela)
   DateTime get _localTime {
     try {
-      final utc = DateTime.parse(match.kickoff).toUtc();
-      return utc.subtract(const Duration(hours: 4));
+      return DateTime.parse(match.kickoff).toUtc().toLocal();
     } catch (_) {
       return DateTime.now();
     }

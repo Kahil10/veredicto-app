@@ -19,7 +19,8 @@ class LiveGamesScreen extends StatefulWidget {
   State<LiveGamesScreen> createState() => _LiveGamesScreenState();
 }
 
-class _LiveGamesScreenState extends State<LiveGamesScreen> {
+class _LiveGamesScreenState extends State<LiveGamesScreen>
+    with WidgetsBindingObserver {
   List<MatchModel> _liveGames = [];
   bool _loading = true;
   Timer? _timer;
@@ -27,12 +28,30 @@ class _LiveGamesScreenState extends State<LiveGamesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetch();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _timer?.cancel();
+      _timer = null;
+    } else if (state == AppLifecycleState.resumed && _timer == null) {
+      _fetch();
+      _startTimer();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
@@ -341,10 +360,10 @@ class _PulsingDotState extends State<_PulsingDot>
         height: widget.size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF22c55e).withValues(alpha: _anim.value),
+          color: const Color(0xFF22c55e).withOpacity(_anim.value),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF22c55e).withValues(alpha: _anim.value * 0.6),
+              color: const Color(0xFF22c55e).withOpacity(_anim.value * 0.6),
               blurRadius: 4,
               spreadRadius: 1,
             ),
