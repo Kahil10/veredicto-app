@@ -62,11 +62,15 @@ class _LiveGamesScreenState extends State<LiveGamesScreen>
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final headers = token != null ? {'Authorization': 'Bearer $token'} : <String, String>{};
 
-      // Béisbol y fútbol en paralelo
+      // Todos los deportes en paralelo
       final results = await Future.wait([
         http.get(Uri.parse('$kBaseUrl/api/matches?sport=baseball&match_date=$today'), headers: headers)
             .timeout(const Duration(seconds: 10)),
         http.get(Uri.parse('$kBaseUrl/api/matches?sport=football&match_date=$today'), headers: headers)
+            .timeout(const Duration(seconds: 10)),
+        http.get(Uri.parse('$kBaseUrl/api/matches?sport=basketball&match_date=$today'), headers: headers)
+            .timeout(const Duration(seconds: 10)),
+        http.get(Uri.parse('$kBaseUrl/api/matches?sport=american_football&match_date=$today'), headers: headers)
             .timeout(const Duration(seconds: 10)),
       ]);
 
@@ -148,8 +152,10 @@ class _LiveGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBaseball = match.sport == 'baseball';
-    final sportIcon  = isBaseball ? '⚾' : '⚽';
+    final isBaseball = match.sport == 'baseball' || match.sport == 'baseball_lvbp';
+    final isBasketball = match.sport == 'basketball';
+    final isAmericanFootball = match.sport == 'american_football';
+    final sportIcon = isBaseball ? '⚾' : isBasketball ? '🏀' : isAmericanFootball ? '🏈' : '⚽';
 
     return GestureDetector(
       onTap: onTap,
@@ -259,7 +265,7 @@ class _LiveGameCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: isBaseball ? kAccent.withAlpha(15) : kSurface2,
+                color: kAccent.withAlpha(15),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: kAccent.withAlpha(40)),
               ),
@@ -267,13 +273,13 @@ class _LiveGameCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    isBaseball ? Icons.sports_baseball : Icons.sports_soccer,
+                    isBaseball ? Icons.sports_baseball : isBasketball ? Icons.sports_basketball : isAmericanFootball ? Icons.sports_football : Icons.sports_soccer,
                     size: 14,
                     color: kAccent,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    isBaseball ? 'Ver diamante en vivo' : 'Ver partido en vivo',
+                    isBaseball ? 'Ver diamante en vivo' : isBasketball ? 'Ver cancha en vivo' : isAmericanFootball ? 'Ver campo en vivo' : 'Ver partido en vivo',
                     style: dmSans(12, weight: FontWeight.w600, color: kAccent),
                   ),
                   const SizedBox(width: 4),
@@ -302,12 +308,12 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('⚾', style: TextStyle(fontSize: 56)),
+          const Text('🎯', style: TextStyle(fontSize: 56)),
           const SizedBox(height: 16),
-          Text('No hay partidos en vivo ahora',
+          Text('No hay partidos en vivo',
               style: dmSans(16, weight: FontWeight.w600, color: kText)),
           const SizedBox(height: 6),
-          Text('Los juegos MLB empiezan ~5pm Venezuela',
+          Text('⚾ MLB · ⚽ Fútbol · 🏀 NBA · 🏈 NFL',
               style: dmSans(13, color: kMuted)),
           const SizedBox(height: 24),
           Text('Se actualiza cada 30 segundos',

@@ -380,21 +380,7 @@ class _WorldCupBanner extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: kGreen,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Ver grupos →',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-            ),
+            const Icon(Icons.chevron_right_rounded, color: kGreen, size: 22),
           ],
         ),
       ),

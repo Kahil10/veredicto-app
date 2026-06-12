@@ -866,66 +866,82 @@ class _LineupSection extends StatelessWidget {
     final homeName = lineup?['home_team'] ?? '';
     final awayName = lineup?['away_team'] ?? '';
 
-    if (!published || (homeList.isEmpty && awayList.isEmpty)) {
-      return Card(
-        margin: const EdgeInsets.only(top: 12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.people_outline, color: kMuted, size: 20),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Alineaciones pendientes — se publican 1-3h antes del primer out',
-                  style: TextStyle(color: kMuted, fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    final hasPitchers =
+        lineup?['home_pitcher'] != null || lineup?['away_pitcher'] != null;
 
-    return Card(
-      margin: const EdgeInsets.only(top: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.people, color: kAccent, size: 18),
-                const SizedBox(width: 8),
-                Text('ALINEACIONES TITULARES',
-                    style: TextStyle(
-                        color: kAccent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2)),
-              ],
+    return Column(
+      children: [
+        // Pitcher card (siempre mostrar si hay datos de pitcher)
+        if (hasPitchers)
+          _PitchersCard(
+            homePitcher: lineup?['home_pitcher'] as Map?,
+            awayPitcher: lineup?['away_pitcher'] as Map?,
+            homeName: homeName,
+            awayName: awayName,
+          ),
+        // Batting lineup (solo si hay alineación publicada)
+        if (published && (homeList.isNotEmpty || awayList.isNotEmpty))
+          Card(
+            margin: const EdgeInsets.only(top: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.people, color: kAccent, size: 18),
+                      const SizedBox(width: 8),
+                      Text('ALINEACIONES TITULARES',
+                          style: TextStyle(
+                              color: kAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                          child: _LineupTeam(
+                              teamName: homeName,
+                              players: homeList,
+                              isHome: true)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _LineupTeam(
+                              teamName: awayName,
+                              players: awayList,
+                              isHome: false)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                    child: _LineupTeam(
-                        teamName: homeName,
-                        players: homeList,
-                        isHome: true)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _LineupTeam(
-                        teamName: awayName,
-                        players: awayList,
-                        isHome: false)),
-              ],
+          ),
+        // Si no hay nada, mostrar mensaje
+        if (!hasPitchers && (!published || (homeList.isEmpty && awayList.isEmpty)))
+          Card(
+            margin: const EdgeInsets.only(top: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.people_outline, color: kMuted, size: 20),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Alineaciones pendientes — se publican 1-3h antes del primer out',
+                      style: TextStyle(color: kMuted, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }
@@ -989,6 +1005,184 @@ class _LineupTeam extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+}
+
+// ── Pitchers abridores ────────────────────────────────────────────────────────
+
+class _PitchersCard extends StatelessWidget {
+  final Map? homePitcher;
+  final Map? awayPitcher;
+  final String homeName;
+  final String awayName;
+
+  const _PitchersCard({
+    this.homePitcher,
+    this.awayPitcher,
+    required this.homeName,
+    required this.awayName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(top: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.sports_baseball, color: kAccent, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'PITCHERS ABRIDORES',
+                  style: TextStyle(
+                    color: kAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _PitcherSide(
+                  teamName: homeName.split(' ').last,
+                  pitcher: homePitcher,
+                  isHome: true,
+                )),
+                Container(width: 1, height: 60, color: kBorder),
+                Expanded(child: _PitcherSide(
+                  teamName: awayName.split(' ').last,
+                  pitcher: awayPitcher,
+                  isHome: false,
+                )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PitcherSide extends StatelessWidget {
+  final String teamName;
+  final Map? pitcher;
+  final bool isHome;
+
+  const _PitcherSide({
+    required this.teamName,
+    this.pitcher,
+    required this.isHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final align = isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end;
+    final textAlign = isHome ? TextAlign.start : TextAlign.end;
+    final padding = isHome
+        ? const EdgeInsets.only(right: 12)
+        : const EdgeInsets.only(left: 12);
+
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: align,
+        children: [
+          Text(
+            teamName,
+            style: const TextStyle(
+              color: kMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+            textAlign: textAlign,
+          ),
+          const SizedBox(height: 4),
+          if (pitcher == null)
+            Text(
+              'Por confirmar',
+              style: const TextStyle(color: kMuted, fontSize: 12),
+              textAlign: textAlign,
+            )
+          else ...[
+            Text(
+              pitcher!['nombre'] as String? ?? '—',
+              style: const TextStyle(
+                color: kText,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: textAlign,
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              alignment: isHome ? WrapAlignment.start : WrapAlignment.end,
+              spacing: 8,
+              children: [
+                if (pitcher!['era'] != null)
+                  _StatChip(
+                    label: 'ERA',
+                    value: (pitcher!['era'] as num).toStringAsFixed(2),
+                  ),
+                if (pitcher!['k9'] != null)
+                  _StatChip(
+                    label: 'K/9',
+                    value: (pitcher!['k9'] as num).toStringAsFixed(1),
+                  ),
+                if (pitcher!['whip'] != null)
+                  _StatChip(
+                    label: 'WHIP',
+                    value: (pitcher!['whip'] as num).toStringAsFixed(2),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: kBorder),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label ',
+              style: const TextStyle(color: kMuted, fontSize: 9),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(
+                color: kAccent,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -588,11 +588,43 @@ class _PredictionHistorySectionState
                 ),
               )
             else if (_failed)
-              const Text('No se pudo cargar el historial.',
-                  style: TextStyle(color: kMuted, fontSize: 13))
+              Column(
+                children: [
+                  const Icon(Icons.cloud_off_rounded, color: kMuted, size: 32),
+                  const SizedBox(height: 6),
+                  const Text('No se pudo cargar el historial',
+                      style: TextStyle(color: kMuted, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() { _loading = true; _failed = false; });
+                      _fetch();
+                    },
+                    icon: const Icon(Icons.refresh, size: 14),
+                    label: const Text('Reintentar', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              )
             else if (_items == null || _items!.isEmpty)
-              const Text('Aún no has consultado predicciones.',
-                  style: TextStyle(color: kMuted, fontSize: 13))
+              Column(
+                children: [
+                  const SizedBox(height: 8),
+                  const Icon(Icons.history_toggle_off_rounded, color: kMuted, size: 36),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Aún no has consultado predicciones',
+                    style: TextStyle(color: kMuted, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Abre un partido y solicita el análisis para verlo aquí',
+                    style: TextStyle(color: kMuted, fontSize: 11),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              )
             else
               ListView.separated(
                 shrinkWrap: true,
