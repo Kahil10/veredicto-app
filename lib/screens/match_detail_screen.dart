@@ -33,6 +33,14 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   Map<String, dynamic>? _lineup;
   bool _lineupLoading = false;
 
+  // Posición del botón flotante Vera IA (arrastrable). null = posición inicial
+  // por defecto (abajo-derecha), calculada en el primer build.
+  Offset? _veraPos;
+
+  // Tamaño aproximado del botón Vera (para limitar el arrastre a la pantalla)
+  static const double _veraW = 132;
+  static const double _veraH = 48;
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +73,21 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
       }
     } catch (_) {}
     if (mounted) setState(() => _lineupLoading = false);
+  }
+
+  void _openVera() {
+    final provider = context.read<MatchesProvider>();
+    final pred = provider.prediction(widget.match.id);
+    final ctx = _buildVeraContext(widget.match, pred);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => ChatProvider(),
+          child: ChatScreen(matchContext: ctx, autoAnalyze: true),
+        ),
+      ),
+    );
   }
 
   @override
@@ -159,29 +182,25 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           ),
         ],
       ),
-      floatingActionButton: isPaywalled ? null : FloatingActionButton.extended(
-        backgroundColor: kPurpleDark,
-        icon: const Icon(Icons.auto_awesome, color: Colors.white),
-        label: const Text('Vera IA',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-        onPressed: () {
-          final pred = provider.prediction(match.id);
-          final ctx = _buildVeraContext(match, pred);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ChangeNotifierProvider(
-                create: (_) => ChatProvider(),
-                child: ChatScreen(matchContext: ctx, autoAnalyze: true),
-              ),
-            ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Límites de arrastre dentro de la pantalla (con un pequeño margen)
+          const margin = 12.0;
+          final maxX = constraints.maxWidth - _veraW - margin;
+          final maxY = constraints.maxHeight - _veraH - margin;
+          // Posición inicial: abajo-derecha
+          final pos = _veraPos ?? Offset(maxX, maxY);
+          final clamped = Offset(
+            pos.dx.clamp(margin, maxX < margin ? margin : maxX),
+            pos.dy.clamp(margin, maxY < margin ? margin : maxY),
           );
-        },
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
+
+          return Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
             _MatchHeader(match),
             const SizedBox(height: 16),
             if (isPaywalled)
@@ -234,8 +253,56 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                   ),
                 ),
               ),
-          ],
-        ),
+                  ],
+                ),
+              ),
+
+              // Botón flotante Vera IA — ARRASTRABLE
+              if (!isPaywalled)
+                Positioned(
+                  left: clamped.dx,
+                  top: clamped.dy,
+                  child: GestureDetector(
+                    onTap: _openVera,
+                    onPanUpdate: (details) {
+                      setState(() {
+                        final next = clamped + details.delta;
+                        _veraPos = Offset(
+                          next.dx.clamp(margin, maxX < margin ? margin : maxX),
+                          next.dy.clamp(margin, maxY < margin ? margin : maxY),
+                        );
+                      });
+                    },
+                    child: Material(
+                      color: Colors.transparent,
+                      elevation: 6,
+                      borderRadius: BorderRadius.circular(28),
+                      shadowColor: Colors.black.withAlpha(120),
+                      child: Container(
+                        height: _veraH,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        decoration: BoxDecoration(
+                          color: kPurpleDark,
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text('Vera IA',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -866,21 +933,15 @@ class _LineupSection extends StatelessWidget {
     final homeName = lineup?['home_team'] ?? '';
     final awayName = lineup?['away_team'] ?? '';
 
-    final hasPitchers =
-        lineup?['home_pitcher'] != null || lineup?['away_pitcher'] != null;
+    // Nota: los pitchers abridores ya se muestran en PredictionCard
+    // (sección "PITCHERS TITULARES"), por eso aquí solo mostramos el
+    // batting order (alineación de bateadores) o el estado pendiente.
+    final hasLineup = published && (homeList.isNotEmpty || awayList.isNotEmpty);
 
     return Column(
       children: [
-        // Pitcher card (siempre mostrar si hay datos de pitcher)
-        if (hasPitchers)
-          _PitchersCard(
-            homePitcher: lineup?['home_pitcher'] as Map?,
-            awayPitcher: lineup?['away_pitcher'] as Map?,
-            homeName: homeName,
-            awayName: awayName,
-          ),
         // Batting lineup (solo si hay alineación publicada)
-        if (published && (homeList.isNotEmpty || awayList.isNotEmpty))
+        if (hasLineup)
           Card(
             margin: const EdgeInsets.only(top: 12),
             child: Padding(
@@ -921,8 +982,8 @@ class _LineupSection extends StatelessWidget {
               ),
             ),
           ),
-        // Si no hay nada, mostrar mensaje
-        if (!hasPitchers && (!published || (homeList.isEmpty && awayList.isEmpty)))
+        // Si no hay alineación publicada, mostrar mensaje
+        if (!hasLineup)
           Card(
             margin: const EdgeInsets.only(top: 12),
             child: Padding(
@@ -1010,179 +1071,6 @@ class _LineupTeam extends StatelessWidget {
 }
 
 // ── Pitchers abridores ────────────────────────────────────────────────────────
-
-class _PitchersCard extends StatelessWidget {
-  final Map? homePitcher;
-  final Map? awayPitcher;
-  final String homeName;
-  final String awayName;
-
-  const _PitchersCard({
-    this.homePitcher,
-    this.awayPitcher,
-    required this.homeName,
-    required this.awayName,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(top: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.sports_baseball, color: kAccent, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'PITCHERS ABRIDORES',
-                  style: TextStyle(
-                    color: kAccent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _PitcherSide(
-                  teamName: homeName.split(' ').last,
-                  pitcher: homePitcher,
-                  isHome: true,
-                )),
-                Container(width: 1, height: 60, color: kBorder),
-                Expanded(child: _PitcherSide(
-                  teamName: awayName.split(' ').last,
-                  pitcher: awayPitcher,
-                  isHome: false,
-                )),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PitcherSide extends StatelessWidget {
-  final String teamName;
-  final Map? pitcher;
-  final bool isHome;
-
-  const _PitcherSide({
-    required this.teamName,
-    this.pitcher,
-    required this.isHome,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final align = isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end;
-    final textAlign = isHome ? TextAlign.start : TextAlign.end;
-    final padding = isHome
-        ? const EdgeInsets.only(right: 12)
-        : const EdgeInsets.only(left: 12);
-
-    return Padding(
-      padding: padding,
-      child: Column(
-        crossAxisAlignment: align,
-        children: [
-          Text(
-            teamName,
-            style: const TextStyle(
-              color: kMuted,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-            textAlign: textAlign,
-          ),
-          const SizedBox(height: 4),
-          if (pitcher == null)
-            Text(
-              'Por confirmar',
-              style: const TextStyle(color: kMuted, fontSize: 12),
-              textAlign: textAlign,
-            )
-          else ...[
-            Text(
-              pitcher!['nombre'] as String? ?? '—',
-              style: const TextStyle(
-                color: kText,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: textAlign,
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              alignment: isHome ? WrapAlignment.start : WrapAlignment.end,
-              spacing: 8,
-              children: [
-                if (pitcher!['era'] != null)
-                  _StatChip(
-                    label: 'ERA',
-                    value: (pitcher!['era'] as num).toStringAsFixed(2),
-                  ),
-                if (pitcher!['k9'] != null)
-                  _StatChip(
-                    label: 'K/9',
-                    value: (pitcher!['k9'] as num).toStringAsFixed(1),
-                  ),
-                if (pitcher!['whip'] != null)
-                  _StatChip(
-                    label: 'WHIP',
-                    value: (pitcher!['whip'] as num).toStringAsFixed(2),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatChip({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: kBorder),
-      ),
-      child: RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: '$label ',
-              style: const TextStyle(color: kMuted, fontSize: 9),
-            ),
-            TextSpan(
-              text: value,
-              style: const TextStyle(
-                color: kAccent,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// NOTA: la tarjeta de pitchers se eliminó de _LineupSection — los abridores
+// ya se muestran en PredictionCard (sección "PITCHERS TITULARES"). Se eliminaron
+// los widgets _PitchersCard / _PitcherSide / _StatChip para evitar duplicación.

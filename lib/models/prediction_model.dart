@@ -33,6 +33,12 @@ class PredictionModel {
   final double? h2hRunsLocalAvg;
   final double? h2hRunsVisitAvg;
 
+  // Bullpen (relevistas)
+  final double? homeBullpenEra;
+  final String? homeBullpenLabel;
+  final double? awayBullpenEra;
+  final String? awayBullpenLabel;
+
   // Ponches del pitcher
   final double? homeKMu;
   final double? homeKLine;
@@ -72,6 +78,10 @@ class PredictionModel {
     this.h2hVictoriasVisit,
     this.h2hRunsLocalAvg,
     this.h2hRunsVisitAvg,
+    this.homeBullpenEra,
+    this.homeBullpenLabel,
+    this.awayBullpenEra,
+    this.awayBullpenLabel,
     this.homeKMu,
     this.homeKLine,
     this.homeKOverPct,
@@ -110,6 +120,10 @@ class PredictionModel {
         h2hVictoriasVisit:  j['h2h_victorias_visit'] as int?,
         h2hRunsLocalAvg:    (j['h2h_runs_local_avg'] as num?)?.toDouble(),
         h2hRunsVisitAvg:    (j['h2h_runs_visit_avg'] as num?)?.toDouble(),
+        homeBullpenEra:   (j['home_bullpen_era'] as num?)?.toDouble(),
+        homeBullpenLabel: j['home_bullpen_label'] as String?,
+        awayBullpenEra:   (j['away_bullpen_era'] as num?)?.toDouble(),
+        awayBullpenLabel: j['away_bullpen_label'] as String?,
         homeKMu:        (j['home_k_mu']        as num?)?.toDouble(),
         homeKLine:      (j['home_k_line']       as num?)?.toDouble(),
         homeKOverPct:   (j['home_k_over_pct']   as num?)?.toDouble(),

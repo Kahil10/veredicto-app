@@ -210,8 +210,20 @@ class PredictionCard extends StatelessWidget {
             icon: '⚾',
             iconColor: const Color(0xFFe8ff3a),
             title: 'PITCHERS TITULARES',
-            subtitle: 'Abridores confirmados por MLB',
+            subtitle: 'Abridores probables · ERA temporada',
             child: _PitcherGrid(pred: pred),
+          ),
+          const SizedBox(height: 10),
+        ],
+
+        // Bullpen / relevistas (solo béisbol / LVBP)
+        if (isBaseballLike && (pred.homeBullpenEra != null || pred.awayBullpenEra != null)) ...[
+          _SectionCard(
+            icon: '🔥',
+            iconColor: const Color(0xFFff6b35),
+            title: 'BULLPEN (RELEVISTAS)',
+            subtitle: 'Calidad del pen que cierra el juego',
+            child: _BullpenContent(pred: pred),
           ),
           const SizedBox(height: 10),
         ],
@@ -739,10 +751,10 @@ class _PitcherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final barColor = isHome ? kAccent : kAccent2;
-    // Clasificar ERA
+    // Clasificar ERA por calidad: <=3.0 élite (verde), <=4.0 sólido (ámbar), >4.0 vulnerable (rojo)
     Color eraColor = kMuted;
     if (era != null) {
-      eraColor = era! <= 3.00 ? kGreen : era! <= 4.50 ? kGold : kRed;
+      eraColor = era! <= 3.00 ? kGreen : era! <= 4.00 ? kGold : kRed;
     }
 
     return Container(
@@ -883,6 +895,138 @@ class _H2HContent extends StatelessWidget {
         ],
       ),
     ]);
+  }
+}
+
+// ── Bullpen (relevistas) ──────────────────────────────────────────────────────
+
+class _BullpenContent extends StatelessWidget {
+  final PredictionModel pred;
+  const _BullpenContent({required this.pred});
+
+  // Color según etiqueta de calidad del bullpen
+  static Color _labelColor(String? label, double? era) {
+    final l = label?.toLowerCase().trim() ?? '';
+    if (l.contains('elite') || l.contains('élite')) return kGreen;
+    if (l.contains('buen')) return const Color(0xFF84cc16); // verde claro
+    if (l.contains('promedio')) return kGold;
+    if (l.contains('débil') || l.contains('debil')) return kRed;
+    // Fallback por ERA si no hay etiqueta reconocible
+    if (era != null) {
+      return era <= 3.20 ? kGreen : era <= 3.90 ? const Color(0xFF84cc16) : era <= 4.50 ? kGold : kRed;
+    }
+    return kMuted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: _BullpenSide(
+            team: home,
+            era: pred.homeBullpenEra,
+            label: pred.homeBullpenLabel,
+            isHome: true,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _BullpenSide(
+            team: away,
+            era: pred.awayBullpenEra,
+            label: pred.awayBullpenLabel,
+            isHome: false,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BullpenSide extends StatelessWidget {
+  final String team;
+  final double? era;
+  final String? label;
+  final bool isHome;
+
+  const _BullpenSide({
+    required this.team,
+    required this.era,
+    required this.label,
+    required this.isHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final barColor = isHome ? kAccent : kAccent2;
+    final qColor = _BullpenContent._labelColor(label, era);
+    final hasData = era != null || (label != null && label!.isNotEmpty);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Franja de color top
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              color: barColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(team.toUpperCase(),
+                    style: GoogleFonts.bebasNeue(
+                        fontSize: 18, color: kText, letterSpacing: 1)),
+                Text('RELEVISTAS',
+                    style: GoogleFonts.jetBrainsMono(
+                        fontSize: 8, color: kMuted, letterSpacing: 1.5)),
+                const SizedBox(height: 10),
+                if (!hasData)
+                  Text('Sin datos',
+                      style: GoogleFonts.dmSans(fontSize: 11, color: kMuted))
+                else ...[
+                  Text(era?.toStringAsFixed(2) ?? '—',
+                      style: GoogleFonts.bebasNeue(
+                          fontSize: 36, color: qColor, height: 1)),
+                  Text('ERA BULLPEN',
+                      style: GoogleFonts.jetBrainsMono(
+                          fontSize: 8, color: kMuted, letterSpacing: 1)),
+                  if (label != null && label!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: qColor.withAlpha(30),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: qColor.withAlpha(70)),
+                      ),
+                      child: Text(label!.toUpperCase(),
+                          style: GoogleFonts.bebasNeue(
+                              fontSize: 13, color: qColor, letterSpacing: 1)),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

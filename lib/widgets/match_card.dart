@@ -266,7 +266,7 @@ class _StatusBadge extends StatelessWidget {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, size: 6, color: Colors.white),
+            _LiveBadgeDot(),
             SizedBox(width: 4),
             Text('EN VIVO',
                 style: TextStyle(
@@ -300,6 +300,53 @@ class _StatusBadge extends StatelessWidget {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+// ── Punto blanco pulsante para el badge EN VIVO ──────────────────────────────
+
+class _LiveBadgeDot extends StatefulWidget {
+  const _LiveBadgeDot();
+
+  @override
+  State<_LiveBadgeDot> createState() => _LiveBadgeDotState();
+}
+
+class _LiveBadgeDotState extends State<_LiveBadgeDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.35, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(_anim.value),
+        ),
+      ),
+    );
   }
 }
 

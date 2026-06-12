@@ -123,21 +123,111 @@ class _LiveGamesScreenState extends State<LiveGamesScreen>
               : RefreshIndicator(
                   color: kAccent,
                   onRefresh: _fetch,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _liveGames.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (ctx, i) => _LiveGameCard(
-                      match: _liveGames[i],
-                      onTap: () => Navigator.push(
-                        ctx,
-                        MaterialPageRoute(
-                          builder: (_) => LiveMatchScreen(match: _liveGames[i]),
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: _buildGroupedList(),
                 ),
+    );
+  }
+
+  /// Agrupa los juegos en vivo por deporte y construye una lista plana
+  /// intercalando encabezados de sección con las tarjetas de cada deporte.
+  /// Solo se muestra el header de un deporte si tiene al menos 1 juego en vivo.
+  Widget _buildGroupedList() {
+    // Orden y metadatos de cada deporte
+    const order = ['baseball', 'football', 'basketball', 'american_football'];
+    const meta = {
+      'baseball': ('⚾', 'Béisbol'),
+      'football': ('⚽', 'Fútbol'),
+      'basketball': ('🏀', 'Baloncesto'),
+      'american_football': ('🏈', 'F. Americano'),
+    };
+
+    String groupKey(MatchModel m) {
+      if (m.sport == 'baseball_lvbp') return 'baseball';
+      if (m.sport == 'football_ven') return 'football';
+      return m.sport;
+    }
+
+    // Agrupar respetando el orden de llegada (ya vienen ordenados por kickoff)
+    final grouped = <String, List<MatchModel>>{};
+    for (final m in _liveGames) {
+      grouped.putIfAbsent(groupKey(m), () => []).add(m);
+    }
+
+    // Construir lista plana de widgets: header + cards por cada grupo no vacío
+    final items = <Widget>[];
+    for (final key in order) {
+      final games = grouped[key];
+      if (games == null || games.isEmpty) continue;
+      final info = meta[key]!;
+      items.add(_SectionHeader(
+        emoji: info.$1,
+        label: info.$2,
+        count: games.length,
+      ));
+      for (final game in games) {
+        items.add(Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _LiveGameCard(
+            match: game,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LiveMatchScreen(match: game),
+              ),
+            ),
+          ),
+        ));
+      }
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: items,
+    );
+  }
+}
+
+// ── Encabezado de sección por deporte ────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final int count;
+
+  const _SectionHeader({
+    required this.emoji,
+    required this.label,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 10),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: dmSans(14, weight: FontWeight.w700, color: kText),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF22c55e).withAlpha(20),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF22c55e).withAlpha(50)),
+            ),
+            child: Text(
+              count == 1 ? '1 en vivo' : '$count en vivo',
+              style: dmSans(10, weight: FontWeight.w700, color: const Color(0xFF22c55e)),
+            ),
+          ),
+          const Expanded(child: Divider(indent: 12, color: kBorder)),
+        ],
+      ),
     );
   }
 }

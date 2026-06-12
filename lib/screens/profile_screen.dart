@@ -578,6 +578,14 @@ class _PredictionHistorySectionState
                         fontWeight: FontWeight.w700, fontSize: 15)),
               ],
             ),
+            const SizedBox(height: 4),
+            const Padding(
+              padding: EdgeInsets.only(left: 28),
+              child: Text(
+                'Partidos que has analizado y si el motor acertó',
+                style: TextStyle(color: kMuted, fontSize: 12, height: 1.3),
+              ),
+            ),
             const SizedBox(height: 12),
             if (_loading)
               const Center(
@@ -666,7 +674,13 @@ class _PredictionItem extends StatelessWidget {
         ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].contains(status);
 
     // Ícono deporte
-    final sportEmoji = sport == 'baseball' ? '⚾' : '⚽';
+    final sportEmoji = (sport == 'baseball' || sport == 'baseball_lvbp')
+        ? '⚾'
+        : sport == 'basketball'
+            ? '🏀'
+            : sport == 'american_football'
+                ? '🏈'
+                : '⚽';
 
     // Texto del resultado / estado
     String statusLabel;

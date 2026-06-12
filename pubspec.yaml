@@ -1,7 +1,7 @@
 name: veredicto_app
 description: "Pronósticos deportivos con motor Monte Carlo+Bayesiano."
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.11.5

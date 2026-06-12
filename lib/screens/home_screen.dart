@@ -152,6 +152,16 @@ class _MatchesTab extends StatelessWidget {
           ],
         ),
         actions: [
+          // Acceso elegante a la Copa del Mundo — solo durante el torneo
+          if (_WorldCupBanner.shouldShow)
+            IconButton(
+              icon: const Text('⚽', style: TextStyle(fontSize: 20)),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const WorldCupScreen()),
+              ),
+              tooltip: 'Copa del Mundo 2026',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh_outlined),
             onPressed: () =>
@@ -317,74 +327,19 @@ class _DateRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Banner Copa del Mundo — visible entre 11 jun y 19 jul 2026
+// Copa del Mundo — el acceso vive en el AppBar del tab Partidos (ver _MatchesTab)
+// y solo se muestra durante la ventana del torneo.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _WorldCupBanner extends StatelessWidget {
-  final String? sport;
-  const _WorldCupBanner({this.sport});
+class _WorldCupBanner {
+  const _WorldCupBanner._();
 
-  static bool get _shouldShow {
+  /// True entre 4 días antes del inicio (7 jun) y el cierre del torneo (19 jul 2026).
+  static bool get shouldShow {
     final now = DateTime.now();
-    // Mostrar banner desde 4 días antes del inicio hasta el cierre del torneo
     final bannerStart = DateTime(2026, 6, 7);
     final bannerEnd = DateTime(2026, 7, 19, 23, 59, 59);
     return !now.isBefore(bannerStart) && now.isBefore(bannerEnd);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_shouldShow) return const SizedBox.shrink();
-    if (sport != null && sport != 'football') return const SizedBox.shrink();
-
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WorldCupScreen()),
-      ),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0a2e1a), Color(0xFF0f3d22), Color(0xFF0a2e1a)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF22c55e).withOpacity(0.35)),
-        ),
-        child: Row(
-          children: [
-            const Text('⚽', style: TextStyle(fontSize: 28)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Copa del Mundo 2026',
-                    style: GoogleFonts.bebasNeue(
-                      fontSize: 17,
-                      color: kGreen,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  Text(
-                    '11 JUN · Grupos y resultados',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: const Color(0xFF22c55e).withOpacity(0.75),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: kGreen, size: 22),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -720,27 +675,18 @@ class _MatchList extends StatelessWidget {
     }
 
     if (provider.matches.isEmpty) {
-      return Column(
-        children: [
-          _WorldCupBanner(sport: provider.sport),
-          Expanded(
-            child: _EmptyMatchesState(sport: provider.sport),
-          ),
-        ],
-      );
+      return _EmptyMatchesState(sport: provider.sport);
     }
 
     return RefreshIndicator(
       color: kPurple,
       onRefresh: () => provider.loadMatches(token: token),
       child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        itemCount: provider.matches.length + 1,
-        separatorBuilder: (_, i) =>
-            i == 0 ? const SizedBox.shrink() : const SizedBox(height: 10),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        itemCount: provider.matches.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (ctx, i) {
-          if (i == 0) return _WorldCupBanner(sport: provider.sport);
-          final match = provider.matches[i - 1];
+          final match = provider.matches[i];
           return MatchCard(
             match: match,
             onTap: () => Navigator.push(
