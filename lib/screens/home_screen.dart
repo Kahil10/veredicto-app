@@ -174,6 +174,9 @@ class _MatchesTab extends StatelessWidget {
         children: [
           // Accuracy banner
           const _AccuracyBanner(),
+          // Acceso a la Copa del Mundo — franja fija visible durante el torneo
+          // (no scrollea con los partidos, no estorba el feed)
+          if (_WorldCupBanner.shouldShow) const _WorldCupAccessBar(),
           // Sport selector + date picker
           _ControlBar(provider: provider, token: auth.token),
           // Match list
@@ -340,6 +343,133 @@ class _WorldCupBanner {
     final bannerStart = DateTime(2026, 6, 7);
     final bannerEnd = DateTime(2026, 7, 19, 23, 59, 59);
     return !now.isBefore(bannerStart) && now.isBefore(bannerEnd);
+  }
+}
+
+/// Franja compacta de acceso a la Copa del Mundo. Va fija debajo del selector,
+/// no scrollea con los partidos. Toca → abre los grupos y resultados.
+class _WorldCupAccessBar extends StatelessWidget {
+  const _WorldCupAccessBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const WorldCupScreen()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0b3a20), Color(0xFF0a2e1a)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kGreen.withOpacity(0.45)),
+          boxShadow: [
+            BoxShadow(
+              color: kGreen.withOpacity(0.18),
+              blurRadius: 16,
+              spreadRadius: -2,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Insignia circular con balón
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: kGreen.withOpacity(0.16),
+                shape: BoxShape.circle,
+                border: Border.all(color: kGreen.withOpacity(0.4)),
+              ),
+              child: const Text('⚽', style: TextStyle(fontSize: 19)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'COPA DEL MUNDO 2026',
+                        style: GoogleFonts.bebasNeue(
+                          fontSize: 16,
+                          color: kText,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      // Punto vivo
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: kGreen.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'EN CURSO',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 8,
+                            color: kGreen,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Grupos · Tabla de posiciones · Resultados',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      color: kGreen.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Pastilla "VER"
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: kGreen,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'VER',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Colors.black, size: 17),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -204,6 +204,46 @@ class PredictionCard extends StatelessWidget {
         _ProButton(pred: pred, match: match),
         const SizedBox(height: 12),
 
+        // ── Baloncesto: Ratings, Ritmo, Descanso, Cara a Cara ──────────────
+        if (isBasketball && pred.bballHomeOrtg != null) ...[
+          _SectionCard(
+            icon: '📊',
+            iconColor: kAccent3,
+            title: 'RATINGS DEL EQUIPO',
+            subtitle: 'Eficiencia por 100 posesiones · ${pred.bballHomeGames ?? '?'} juegos',
+            child: _BballRatings(pred: pred),
+          ),
+          const SizedBox(height: 10),
+          _SectionCard(
+            icon: '⏱️',
+            iconColor: kGold,
+            title: 'RITMO DEL JUEGO',
+            subtitle: 'Posesiones estimadas — define el total de puntos',
+            child: _BballPace(pred: pred),
+          ),
+          const SizedBox(height: 10),
+          if (pred.bballHomeRest != null || pred.bballAwayRest != null) ...[
+            _SectionCard(
+              icon: '🛌',
+              iconColor: kGreen,
+              title: 'DESCANSO',
+              subtitle: 'Jugar sin descanso (back-to-back) baja el rendimiento',
+              child: _BballRest(pred: pred),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if ((pred.bballH2hJuegos ?? 0) >= 2) ...[
+            _SectionCard(
+              icon: '🤝',
+              iconColor: kGold,
+              title: 'CARA A CARA',
+              subtitle: 'Serie reciente entre estos equipos',
+              child: _BballH2H(pred: pred),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+
         // Pitchers (solo béisbol / LVBP)
         if (isBaseballLike && pred.homePitcherName != null) ...[
           _SectionCard(
@@ -923,27 +963,29 @@ class _BullpenContent extends StatelessWidget {
     final home = pred.match.homeTeam.split(' ').last;
     final away = pred.match.awayTeam.split(' ').last;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: _BullpenSide(
-            team: home,
-            era: pred.homeBullpenEra,
-            label: pred.homeBullpenLabel,
-            isHome: true,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _BullpenSide(
+              team: home,
+              era: pred.homeBullpenEra,
+              label: pred.homeBullpenLabel,
+              isHome: true,
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _BullpenSide(
-            team: away,
-            era: pred.awayBullpenEra,
-            label: pred.awayBullpenLabel,
-            isHome: false,
+          const SizedBox(width: 10),
+          Expanded(
+            child: _BullpenSide(
+              team: away,
+              era: pred.awayBullpenEra,
+              label: pred.awayBullpenLabel,
+              isHome: false,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1026,6 +1068,220 @@ class _BullpenSide extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Baloncesto: Ratings / Ritmo / Descanso / H2H ──────────────────────────────
+
+class _BballRatings extends StatelessWidget {
+  final PredictionModel pred;
+  const _BballRatings({required this.pred});
+
+  static Color ortgColor(double? r) {
+    if (r == null) return kMuted;
+    if (r >= 116) return kGreen;
+    if (r >= 110) return const Color(0xFF84cc16);
+    if (r >= 106) return kGold;
+    return kRed;
+  }
+
+  static Color drtgColor(double? r) {
+    if (r == null) return kMuted;
+    if (r <= 108) return kGreen;          // defensa élite (permite poco)
+    if (r <= 113) return const Color(0xFF84cc16);
+    if (r <= 117) return kGold;
+    return kRed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _BballRatingSide(
+              team: home, ortg: pred.bballHomeOrtg, drtg: pred.bballHomeDrtg, isHome: true)),
+          const SizedBox(width: 10),
+          Expanded(child: _BballRatingSide(
+              team: away, ortg: pred.bballAwayOrtg, drtg: pred.bballAwayDrtg, isHome: false)),
+        ],
+      ),
+    );
+  }
+}
+
+class _BballRatingSide extends StatelessWidget {
+  final String team;
+  final double? ortg;
+  final double? drtg;
+  final bool isHome;
+  const _BballRatingSide({required this.team, this.ortg, this.drtg, required this.isHome});
+
+  @override
+  Widget build(BuildContext context) {
+    final barColor = isHome ? kAccent : kAccent2;
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              color: barColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(team.toUpperCase(),
+                    style: GoogleFonts.bebasNeue(fontSize: 18, color: kText, letterSpacing: 1)),
+                const SizedBox(height: 10),
+                Text('OFENSIVO',
+                    style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1.2)),
+                Text(ortg?.toStringAsFixed(1) ?? '—',
+                    style: GoogleFonts.bebasNeue(
+                        fontSize: 30, color: _BballRatings.ortgColor(ortg), height: 1.0)),
+                const SizedBox(height: 8),
+                Text('DEFENSIVO',
+                    style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1.2)),
+                Text(drtg?.toStringAsFixed(1) ?? '—',
+                    style: GoogleFonts.bebasNeue(
+                        fontSize: 30, color: _BballRatings.drtgColor(drtg), height: 1.0)),
+                const SizedBox(height: 4),
+                Text('pts por 100 pos.',
+                    style: GoogleFonts.dmSans(fontSize: 9, color: kMuted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BballPace extends StatelessWidget {
+  final PredictionModel pred;
+  const _BballPace({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final pace = pred.bballGamePace;
+    String tempo = '—';
+    Color c = kMuted;
+    if (pace != null) {
+      if (pace >= 102) { tempo = 'RÁPIDO'; c = kGreen; }
+      else if (pace >= 98) { tempo = 'MEDIO'; c = kGold; }
+      else { tempo = 'LENTO'; c = kAccent3; }
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(pace?.toStringAsFixed(1) ?? '—',
+              style: GoogleFonts.bebasNeue(fontSize: 34, color: kText)),
+          Text('posesiones estimadas',
+              style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+        ]),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: c.withAlpha(30),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: c.withAlpha(80)),
+          ),
+          child: Text(tempo,
+              style: GoogleFonts.bebasNeue(fontSize: 15, color: c, letterSpacing: 1)),
+        ),
+      ],
+    );
+  }
+}
+
+class _BballRest extends StatelessWidget {
+  final PredictionModel pred;
+  const _BballRest({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return Row(
+      children: [
+        Expanded(child: _restSide(home, pred.bballHomeRest, pred.bballHomeB2b == true, kAccent)),
+        const SizedBox(width: 10),
+        Expanded(child: _restSide(away, pred.bballAwayRest, pred.bballAwayB2b == true, kAccent2)),
+      ],
+    );
+  }
+
+  Widget _restSide(String team, int? rest, bool b2b, Color bar) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: kSurface2,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: b2b ? kRed.withAlpha(90) : kBorder),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(team.toUpperCase(),
+            style: GoogleFonts.bebasNeue(fontSize: 15, color: kText, letterSpacing: 1)),
+        const SizedBox(height: 6),
+        if (b2b)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: kRed.withAlpha(30),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: kRed.withAlpha(80)),
+            ),
+            child: Text('BACK-TO-BACK',
+                style: GoogleFonts.bebasNeue(fontSize: 13, color: kRed, letterSpacing: 1)),
+          )
+        else
+          Text('${rest ?? '—'} ${rest == 1 ? 'día' : 'días'} de descanso',
+              style: GoogleFonts.dmSans(fontSize: 12, color: kText)),
+      ]),
+    );
+  }
+}
+
+class _BballH2H extends StatelessWidget {
+  final PredictionModel pred;
+  const _BballH2H({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    final hl = pred.bballH2hLocal ?? 0;
+    final hv = pred.bballH2hVisit ?? 0;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        Column(children: [
+          Text('$hl', style: GoogleFonts.bebasNeue(fontSize: 32, color: kAccent)),
+          Text(home.toUpperCase(),
+              style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
+        ]),
+        Text('${pred.bballH2hJuegos ?? 0} juegos',
+            style: GoogleFonts.dmSans(fontSize: 11, color: kMuted)),
+        Column(children: [
+          Text('$hv', style: GoogleFonts.bebasNeue(fontSize: 32, color: kAccent2)),
+          Text(away.toUpperCase(),
+              style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
+        ]),
+      ],
     );
   }
 }

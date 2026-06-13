@@ -33,14 +33,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   Map<String, dynamic>? _lineup;
   bool _lineupLoading = false;
 
-  // Posición del botón flotante Vera IA (arrastrable). null = posición inicial
-  // por defecto (abajo-derecha), calculada en el primer build.
-  Offset? _veraPos;
-
-  // Tamaño aproximado del botón Vera (para limitar el arrastre a la pantalla)
-  static const double _veraW = 132;
-  static const double _veraH = 48;
-
   @override
   void initState() {
     super.initState();
@@ -182,21 +174,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Límites de arrastre dentro de la pantalla (con un pequeño margen)
-          const margin = 12.0;
-          final maxX = constraints.maxWidth - _veraW - margin;
-          final maxY = constraints.maxHeight - _veraH - margin;
-          // Posición inicial: abajo-derecha
-          final pos = _veraPos ?? Offset(maxX, maxY);
-          final clamped = Offset(
-            pos.dx.clamp(margin, maxX < margin ? margin : maxX),
-            pos.dy.clamp(margin, maxY < margin ? margin : maxY),
-          );
-
-          return Stack(
-            children: [
+      body: Stack(
+        children: [
               SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -257,52 +236,143 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 ),
               ),
 
-              // Botón flotante Vera IA — ARRASTRABLE
-              if (!isPaywalled)
-                Positioned(
-                  left: clamped.dx,
-                  top: clamped.dy,
-                  child: GestureDetector(
-                    onTap: _openVera,
-                    onPanUpdate: (details) {
-                      setState(() {
-                        final next = clamped + details.delta;
-                        _veraPos = Offset(
-                          next.dx.clamp(margin, maxX < margin ? margin : maxX),
-                          next.dy.clamp(margin, maxY < margin ? margin : maxY),
-                        );
-                      });
-                    },
-                    child: Material(
-                      color: Colors.transparent,
-                      elevation: 6,
-                      borderRadius: BorderRadius.circular(28),
-                      shadowColor: Colors.black.withAlpha(120),
-                      child: Container(
-                        height: _veraH,
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        decoration: BoxDecoration(
-                          color: kPurpleDark,
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
-                            Text('Vera IA',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+          // Botón flotante Vera IA — ARRASTRABLE (aislado en su propio widget
+          // para que el arrastre NO reconstruya la PredictionCard ni el scroll)
+          if (!isPaywalled)
+            Positioned.fill(child: _VeraDraggable(onTap: _openVera)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Botón flotante "Vera IA" arrastrable. Maneja su propia posición con setState
+/// local — solo se reconstruye este widget durante el drag (aislado con
+/// RepaintBoundary), no toda la pantalla. Mientras arrastras sigue al dedo 1:1
+/// (sin animación) y al soltar se imanta al borde lateral más cercano.
+class _VeraDraggable extends StatefulWidget {
+  final VoidCallback onTap;
+  const _VeraDraggable({required this.onTap});
+
+  @override
+  State<_VeraDraggable> createState() => _VeraDraggableState();
+}
+
+class _VeraDraggableState extends State<_VeraDraggable> {
+  Offset? _pos;
+  bool _dragging = false;
+  static const double _w = 128;
+  static const double _h = 46;
+  static const double _margin = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final maxX = c.maxWidth - _w - _margin;
+        final maxY = c.maxHeight - _h - _margin;
+        const minX = _margin;
+        const minY = _margin;
+        final p = _pos ?? Offset(maxX, maxY); // inicial: abajo-derecha
+        final clamped = Offset(
+          p.dx.clamp(minX, maxX < minX ? minX : maxX),
+          p.dy.clamp(minY, maxY < minY ? minY : maxY),
+        );
+
+        return Stack(
+          children: [
+            AnimatedPositioned(
+              left: clamped.dx,
+              top: clamped.dy,
+              duration: _dragging
+                  ? Duration.zero
+                  : const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              child: RepaintBoundary(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onTap,
+                  onPanStart: (_) => setState(() => _dragging = true),
+                  onPanUpdate: (details) {
+                    setState(() {
+                      final next = clamped + details.delta;
+                      _pos = Offset(
+                        next.dx.clamp(minX, maxX < minX ? minX : maxX),
+                        next.dy.clamp(minY, maxY < minY ? minY : maxY),
+                      );
+                    });
+                  },
+                  onPanEnd: (_) {
+                    // Imantar al borde lateral más cercano (feedback premium)
+                    final snapX = clamped.dx < (c.maxWidth - _w) / 2
+                        ? minX.toDouble()
+                        : maxX;
+                    setState(() {
+                      _dragging = false;
+                      _pos = Offset(snapX, clamped.dy);
+                    });
+                  },
+                  child: const _VeraPill(),
                 ),
-            ],
-          );
-        },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Píldora visual de Vera IA — paleta de marca (lima→cyan), avatar con sparkle
+/// y aura suave. Sin animación continua: estático = sin coste de repintado en
+/// reposo, pero con look premium.
+class _VeraPill extends StatelessWidget {
+  const _VeraPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [kAccent, kAccent3],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: kAccent.withAlpha(90),
+            blurRadius: 18,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              color: Color(0xE6000000), // negro 90% → contraste con el sparkle
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.auto_awesome, color: kAccent, size: 17),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Vera IA',
+            style: GoogleFonts.dmSans(
+              color: Colors.black,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }

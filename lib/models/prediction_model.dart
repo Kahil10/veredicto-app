@@ -39,6 +39,24 @@ class PredictionModel {
   final double? awayBullpenEra;
   final String? awayBullpenLabel;
 
+  // Baloncesto — ratings, ritmo, descanso, H2H
+  final double? bballHomeOrtg;
+  final double? bballHomeDrtg;
+  final double? bballAwayOrtg;
+  final double? bballAwayDrtg;
+  final double? bballGamePace;
+  final int?    bballHomeRest;
+  final int?    bballAwayRest;
+  final bool?   bballHomeB2b;
+  final bool?   bballAwayB2b;
+  final int?    bballHomeGames;
+  final int?    bballAwayGames;
+  final int?    bballH2hJuegos;
+  final int?    bballH2hLocal;
+  final int?    bballH2hVisit;
+  final double? bballInjuryHome;
+  final double? bballInjuryAway;
+
   // Ponches del pitcher
   final double? homeKMu;
   final double? homeKLine;
@@ -82,6 +100,22 @@ class PredictionModel {
     this.homeBullpenLabel,
     this.awayBullpenEra,
     this.awayBullpenLabel,
+    this.bballHomeOrtg,
+    this.bballHomeDrtg,
+    this.bballAwayOrtg,
+    this.bballAwayDrtg,
+    this.bballGamePace,
+    this.bballHomeRest,
+    this.bballAwayRest,
+    this.bballHomeB2b,
+    this.bballAwayB2b,
+    this.bballHomeGames,
+    this.bballAwayGames,
+    this.bballH2hJuegos,
+    this.bballH2hLocal,
+    this.bballH2hVisit,
+    this.bballInjuryHome,
+    this.bballInjuryAway,
     this.homeKMu,
     this.homeKLine,
     this.homeKOverPct,
@@ -124,6 +158,22 @@ class PredictionModel {
         homeBullpenLabel: j['home_bullpen_label'] as String?,
         awayBullpenEra:   (j['away_bullpen_era'] as num?)?.toDouble(),
         awayBullpenLabel: j['away_bullpen_label'] as String?,
+        bballHomeOrtg: (j['bball_home_ortg'] as num?)?.toDouble(),
+        bballHomeDrtg: (j['bball_home_drtg'] as num?)?.toDouble(),
+        bballAwayOrtg: (j['bball_away_ortg'] as num?)?.toDouble(),
+        bballAwayDrtg: (j['bball_away_drtg'] as num?)?.toDouble(),
+        bballGamePace: (j['bball_game_pace'] as num?)?.toDouble(),
+        bballHomeRest: (j['bball_home_rest'] as num?)?.toInt(),
+        bballAwayRest: (j['bball_away_rest'] as num?)?.toInt(),
+        bballHomeB2b:  j['bball_home_b2b'] as bool?,
+        bballAwayB2b:  j['bball_away_b2b'] as bool?,
+        bballHomeGames: (j['bball_home_games'] as num?)?.toInt(),
+        bballAwayGames: (j['bball_away_games'] as num?)?.toInt(),
+        bballH2hJuegos: (j['bball_h2h_juegos'] as num?)?.toInt(),
+        bballH2hLocal:  (j['bball_h2h_local'] as num?)?.toInt(),
+        bballH2hVisit:  (j['bball_h2h_visit'] as num?)?.toInt(),
+        bballInjuryHome: (j['bball_injury_home'] as num?)?.toDouble(),
+        bballInjuryAway: (j['bball_injury_away'] as num?)?.toDouble(),
         homeKMu:        (j['home_k_mu']        as num?)?.toDouble(),
         homeKLine:      (j['home_k_line']       as num?)?.toDouble(),
         homeKOverPct:   (j['home_k_over_pct']   as num?)?.toDouble(),
