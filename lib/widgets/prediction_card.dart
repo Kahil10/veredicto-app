@@ -1450,17 +1450,20 @@ class _BballPropRow extends StatelessWidget {
               style: GoogleFonts.bebasNeue(fontSize: 16, color: kText, letterSpacing: 0.8)),
           Text('$team · promedia ${ppg.toStringAsFixed(1)} pts/juego',
               style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
-          if (data['reb_line'] != null || data['ast_line'] != null) ...[
+          if (data['reb_line'] != null ||
+              data['ast_line'] != null ||
+              data['tri_line'] != null) ...[
             const SizedBox(height: 6),
-            Row(children: [
+            Wrap(spacing: 6, runSpacing: 4, children: [
               if (data['reb_line'] != null)
                 _miniProp('REB', (data['reb_line'] as num).toDouble(),
                     (data['reb_over_pct'] as num?)?.toDouble() ?? 50),
-              if (data['ast_line'] != null) ...[
-                const SizedBox(width: 6),
+              if (data['ast_line'] != null)
                 _miniProp('AST', (data['ast_line'] as num).toDouble(),
                     (data['ast_over_pct'] as num?)?.toDouble() ?? 50),
-              ],
+              if (data['tri_line'] != null)
+                _miniProp('3PT', (data['tri_line'] as num).toDouble(),
+                    (data['tri_over_pct'] as num?)?.toDouble() ?? 50),
             ]),
           ],
         ])),
