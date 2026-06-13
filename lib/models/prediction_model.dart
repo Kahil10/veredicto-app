@@ -56,6 +56,21 @@ class PredictionModel {
   final int?    bballH2hVisit;
   final double? bballInjuryHome;
   final double? bballInjuryAway;
+  final List<Map<String, dynamic>>? bballPropsHome;
+  final List<Map<String, dynamic>>? bballPropsAway;
+  // Forma reciente
+  final int?    bballHomeFormN;
+  final int?    bballHomeFormW;
+  final int?    bballHomeFormL;
+  final String? bballHomeStreak;
+  final double? bballHomeOffRecent;
+  final double? bballHomeDefRecent;
+  final int?    bballAwayFormN;
+  final int?    bballAwayFormW;
+  final int?    bballAwayFormL;
+  final String? bballAwayStreak;
+  final double? bballAwayOffRecent;
+  final double? bballAwayDefRecent;
 
   // Ponches del pitcher
   final double? homeKMu;
@@ -116,6 +131,20 @@ class PredictionModel {
     this.bballH2hVisit,
     this.bballInjuryHome,
     this.bballInjuryAway,
+    this.bballPropsHome,
+    this.bballPropsAway,
+    this.bballHomeFormN,
+    this.bballHomeFormW,
+    this.bballHomeFormL,
+    this.bballHomeStreak,
+    this.bballHomeOffRecent,
+    this.bballHomeDefRecent,
+    this.bballAwayFormN,
+    this.bballAwayFormW,
+    this.bballAwayFormL,
+    this.bballAwayStreak,
+    this.bballAwayOffRecent,
+    this.bballAwayDefRecent,
     this.homeKMu,
     this.homeKLine,
     this.homeKOverPct,
@@ -174,6 +203,24 @@ class PredictionModel {
         bballH2hVisit:  (j['bball_h2h_visit'] as num?)?.toInt(),
         bballInjuryHome: (j['bball_injury_home'] as num?)?.toDouble(),
         bballInjuryAway: (j['bball_injury_away'] as num?)?.toDouble(),
+        bballPropsHome: (j['bball_props_home'] as List?)
+            ?.map((e) => (e as Map).cast<String, dynamic>())
+            .toList(),
+        bballPropsAway: (j['bball_props_away'] as List?)
+            ?.map((e) => (e as Map).cast<String, dynamic>())
+            .toList(),
+        bballHomeFormN: (j['bball_home_form_n'] as num?)?.toInt(),
+        bballHomeFormW: (j['bball_home_form_w'] as num?)?.toInt(),
+        bballHomeFormL: (j['bball_home_form_l'] as num?)?.toInt(),
+        bballHomeStreak: j['bball_home_streak'] as String?,
+        bballHomeOffRecent: (j['bball_home_off_recent'] as num?)?.toDouble(),
+        bballHomeDefRecent: (j['bball_home_def_recent'] as num?)?.toDouble(),
+        bballAwayFormN: (j['bball_away_form_n'] as num?)?.toInt(),
+        bballAwayFormW: (j['bball_away_form_w'] as num?)?.toInt(),
+        bballAwayFormL: (j['bball_away_form_l'] as num?)?.toInt(),
+        bballAwayStreak: j['bball_away_streak'] as String?,
+        bballAwayOffRecent: (j['bball_away_off_recent'] as num?)?.toDouble(),
+        bballAwayDefRecent: (j['bball_away_def_recent'] as num?)?.toDouble(),
         homeKMu:        (j['home_k_mu']        as num?)?.toDouble(),
         homeKLine:      (j['home_k_line']       as num?)?.toDouble(),
         homeKOverPct:   (j['home_k_over_pct']   as num?)?.toDouble(),

@@ -214,6 +214,16 @@ class PredictionCard extends StatelessWidget {
             child: _BballRatings(pred: pred),
           ),
           const SizedBox(height: 10),
+          if ((pred.bballHomeFormN ?? 0) > 0 || (pred.bballAwayFormN ?? 0) > 0) ...[
+            _SectionCard(
+              icon: '🔥',
+              iconColor: kAccent2,
+              title: 'FORMA RECIENTE',
+              subtitle: 'Últimos ${pred.bballHomeFormN ?? pred.bballAwayFormN ?? 10} juegos · récord, racha y puntos',
+              child: _BballForm(pred: pred),
+            ),
+            const SizedBox(height: 10),
+          ],
           _SectionCard(
             icon: '⏱️',
             iconColor: kGold,
@@ -239,6 +249,17 @@ class PredictionCard extends StatelessWidget {
               title: 'CARA A CARA',
               subtitle: 'Serie reciente entre estos equipos',
               child: _BballH2H(pred: pred),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if ((pred.bballPropsHome?.isNotEmpty ?? false) ||
+              (pred.bballPropsAway?.isNotEmpty ?? false)) ...[
+            _SectionCard(
+              icon: '🎯',
+              iconColor: kAccent3,
+              title: 'PROPS DE JUGADORES',
+              subtitle: 'Línea de puntos por jugador clave · ¿Más o Menos?',
+              child: _BballProps(pred: pred),
             ),
             const SizedBox(height: 10),
           ],
@@ -1282,6 +1303,199 @@ class _BballH2H extends StatelessWidget {
               style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
         ]),
       ],
+    );
+  }
+}
+
+class _BballForm extends StatelessWidget {
+  final PredictionModel pred;
+  const _BballForm({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _formSide(home, pred.bballHomeFormW, pred.bballHomeFormL,
+              pred.bballHomeStreak, pred.bballHomeOffRecent, pred.bballHomeDefRecent, kAccent)),
+          const SizedBox(width: 10),
+          Expanded(child: _formSide(away, pred.bballAwayFormW, pred.bballAwayFormL,
+              pred.bballAwayStreak, pred.bballAwayOffRecent, pred.bballAwayDefRecent, kAccent2)),
+        ],
+      ),
+    );
+  }
+
+  Widget _formSide(String team, int? w, int? l, String? streak,
+      double? off, double? def, Color bar) {
+    final isWinStreak = (streak ?? '').startsWith('G');
+    final hasStreak = streak != null && streak.isNotEmpty;
+    final streakColor = !hasStreak ? kMuted : (isWinStreak ? kGreen : kRed);
+    final streakN = hasStreak ? streak.substring(1) : '';
+    final streakLabel = !hasStreak
+        ? 'SIN RACHA'
+        : (isWinStreak ? '$streakN GANADOS SEGUIDOS' : '$streakN PERDIDOS SEGUIDOS');
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              color: bar,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(team.toUpperCase(),
+                    style: GoogleFonts.bebasNeue(fontSize: 18, color: kText, letterSpacing: 1)),
+                const SizedBox(height: 8),
+                Text('RÉCORD ÚLTIMOS 10',
+                    style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1.2)),
+                Text('${w ?? 0}V - ${l ?? 0}D',
+                    style: GoogleFonts.bebasNeue(fontSize: 26, color: kText, height: 1.0)),
+                const SizedBox(height: 8),
+                Text('RACHA ACTUAL',
+                    style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1.2)),
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: streakColor.withAlpha(30),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: streakColor.withAlpha(80)),
+                  ),
+                  child: Text(streakLabel,
+                      style: GoogleFonts.bebasNeue(fontSize: 12, color: streakColor, letterSpacing: 0.5)),
+                ),
+                const SizedBox(height: 8),
+                Text('${off?.toStringAsFixed(0) ?? '—'} anota · ${def?.toStringAsFixed(0) ?? '—'} permite',
+                    style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+                Text('por 100 posesiones (reciente)',
+                    style: GoogleFonts.dmSans(fontSize: 8, color: kMuted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BballProps extends StatelessWidget {
+  final PredictionModel pred;
+  const _BballProps({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.bballPropsHome ?? const [];
+    final away = pred.bballPropsAway ?? const [];
+    final homeTeam = pred.match.homeTeam.split(' ').last;
+    final awayTeam = pred.match.awayTeam.split(' ').last;
+    return Column(
+      children: [
+        ...home.map((p) => _BballPropRow(data: p, team: homeTeam, isHome: true)),
+        ...away.map((p) => _BballPropRow(data: p, team: awayTeam, isHome: false)),
+      ],
+    );
+  }
+}
+
+class _BballPropRow extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final String team;
+  final bool isHome;
+  const _BballPropRow({required this.data, required this.team, required this.isHome});
+
+  @override
+  Widget build(BuildContext context) {
+    final player = (data['player'] ?? '—').toString();
+    final ppg = (data['ppg'] as num?)?.toDouble() ?? 0;
+    final line = (data['line'] as num?)?.toDouble() ?? 0;
+    final over = (data['over_pct'] as num?)?.toDouble() ?? 0;
+    final under = (data['under_pct'] as num?)?.toDouble() ?? 0;
+    final isOver = over >= under;
+    final favColor = isOver ? kGreen : kAccent3;
+    final favLabel = isOver
+        ? 'MÁS DE ${line.toStringAsFixed(1)}'
+        : 'MENOS DE ${line.toStringAsFixed(1)}';
+    final favPct = isOver ? over : under;
+    final barColor = isHome ? kAccent : kAccent2;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: kSurface2,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: kBorder),
+      ),
+      child: Row(children: [
+        Container(width: 3, height: 38, color: barColor),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(player.toUpperCase(),
+              style: GoogleFonts.bebasNeue(fontSize: 16, color: kText, letterSpacing: 0.8)),
+          Text('$team · promedia ${ppg.toStringAsFixed(1)} pts/juego',
+              style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+          if (data['reb_line'] != null || data['ast_line'] != null) ...[
+            const SizedBox(height: 6),
+            Row(children: [
+              if (data['reb_line'] != null)
+                _miniProp('REB', (data['reb_line'] as num).toDouble(),
+                    (data['reb_over_pct'] as num?)?.toDouble() ?? 50),
+              if (data['ast_line'] != null) ...[
+                const SizedBox(width: 6),
+                _miniProp('AST', (data['ast_line'] as num).toDouble(),
+                    (data['ast_over_pct'] as num?)?.toDouble() ?? 50),
+              ],
+            ]),
+          ],
+        ])),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: favColor.withAlpha(35),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: favColor.withAlpha(80)),
+            ),
+            child: Text(favLabel,
+                style: GoogleFonts.bebasNeue(fontSize: 14, color: favColor, letterSpacing: 1)),
+          ),
+          const SizedBox(height: 4),
+          Text('${favPct.toStringAsFixed(1)}%',
+              style: GoogleFonts.jetBrainsMono(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: favColor)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _miniProp(String label, double line, double overPct) {
+    final c = overPct >= 50 ? kGreen : kAccent3;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: kBorder),
+      ),
+      child: Text('$label ${line.toStringAsFixed(1)}',
+          style: GoogleFonts.jetBrainsMono(
+              fontSize: 9, fontWeight: FontWeight.w700, color: c)),
     );
   }
 }
