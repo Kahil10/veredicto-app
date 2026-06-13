@@ -71,6 +71,27 @@ class PredictionModel {
   final String? bballAwayStreak;
   final double? bballAwayOffRecent;
   final double? bballAwayDefRecent;
+  // NFL
+  final double? nflHomeOff;
+  final double? nflHomeDef;
+  final double? nflAwayOff;
+  final double? nflAwayDef;
+  final double? nflHomeYpp;
+  final double? nflAwayYpp;
+  final double? nflHomeTov;
+  final double? nflAwayTov;
+  final double? nflMargin;
+  final int?    nflHomeFormW;
+  final int?    nflHomeFormL;
+  final String? nflHomeStreak;
+  final int?    nflAwayFormW;
+  final int?    nflAwayFormL;
+  final String? nflAwayStreak;
+  final int?    nflH2hJuegos;
+  final int?    nflH2hLocal;
+  final int?    nflH2hVisit;
+  final int?    nflHomeGames;
+  final int?    nflAwayGames;
 
   // Ponches del pitcher
   final double? homeKMu;
@@ -145,6 +166,26 @@ class PredictionModel {
     this.bballAwayStreak,
     this.bballAwayOffRecent,
     this.bballAwayDefRecent,
+    this.nflHomeOff,
+    this.nflHomeDef,
+    this.nflAwayOff,
+    this.nflAwayDef,
+    this.nflHomeYpp,
+    this.nflAwayYpp,
+    this.nflHomeTov,
+    this.nflAwayTov,
+    this.nflMargin,
+    this.nflHomeFormW,
+    this.nflHomeFormL,
+    this.nflHomeStreak,
+    this.nflAwayFormW,
+    this.nflAwayFormL,
+    this.nflAwayStreak,
+    this.nflH2hJuegos,
+    this.nflH2hLocal,
+    this.nflH2hVisit,
+    this.nflHomeGames,
+    this.nflAwayGames,
     this.homeKMu,
     this.homeKLine,
     this.homeKOverPct,
@@ -221,6 +262,26 @@ class PredictionModel {
         bballAwayStreak: j['bball_away_streak'] as String?,
         bballAwayOffRecent: (j['bball_away_off_recent'] as num?)?.toDouble(),
         bballAwayDefRecent: (j['bball_away_def_recent'] as num?)?.toDouble(),
+        nflHomeOff: (j['nfl_home_off'] as num?)?.toDouble(),
+        nflHomeDef: (j['nfl_home_def'] as num?)?.toDouble(),
+        nflAwayOff: (j['nfl_away_off'] as num?)?.toDouble(),
+        nflAwayDef: (j['nfl_away_def'] as num?)?.toDouble(),
+        nflHomeYpp: (j['nfl_home_ypp'] as num?)?.toDouble(),
+        nflAwayYpp: (j['nfl_away_ypp'] as num?)?.toDouble(),
+        nflHomeTov: (j['nfl_home_tov'] as num?)?.toDouble(),
+        nflAwayTov: (j['nfl_away_tov'] as num?)?.toDouble(),
+        nflMargin: (j['nfl_margin'] as num?)?.toDouble(),
+        nflHomeFormW: (j['nfl_home_form_w'] as num?)?.toInt(),
+        nflHomeFormL: (j['nfl_home_form_l'] as num?)?.toInt(),
+        nflHomeStreak: j['nfl_home_streak'] as String?,
+        nflAwayFormW: (j['nfl_away_form_w'] as num?)?.toInt(),
+        nflAwayFormL: (j['nfl_away_form_l'] as num?)?.toInt(),
+        nflAwayStreak: j['nfl_away_streak'] as String?,
+        nflH2hJuegos: (j['nfl_h2h_juegos'] as num?)?.toInt(),
+        nflH2hLocal: (j['nfl_h2h_local'] as num?)?.toInt(),
+        nflH2hVisit: (j['nfl_h2h_visit'] as num?)?.toInt(),
+        nflHomeGames: (j['nfl_home_games'] as num?)?.toInt(),
+        nflAwayGames: (j['nfl_away_games'] as num?)?.toInt(),
         homeKMu:        (j['home_k_mu']        as num?)?.toDouble(),
         homeKLine:      (j['home_k_line']       as num?)?.toDouble(),
         homeKOverPct:   (j['home_k_over_pct']   as num?)?.toDouble(),

@@ -265,6 +265,46 @@ class PredictionCard extends StatelessWidget {
           ],
         ],
 
+        // ── NFL: Ratings, Eficiencia, Forma, Cara a Cara ──────────────────
+        if (isNFL && pred.nflHomeOff != null) ...[
+          _SectionCard(
+            icon: '🏈',
+            iconColor: kAccent3,
+            title: 'RATINGS DEL EQUIPO',
+            subtitle: 'Puntos ofensiva/defensiva por juego · ${pred.nflHomeGames ?? '?'} juegos',
+            child: _NflRatings(pred: pred),
+          ),
+          const SizedBox(height: 10),
+          _SectionCard(
+            icon: '📈',
+            iconColor: kGold,
+            title: 'EFICIENCIA',
+            subtitle: 'Yardas por jugada y pérdidas de balón (turnovers)',
+            child: _NflEfficiency(pred: pred),
+          ),
+          const SizedBox(height: 10),
+          if (((pred.nflHomeFormW ?? 0) + (pred.nflHomeFormL ?? 0)) > 0) ...[
+            _SectionCard(
+              icon: '🔥',
+              iconColor: kAccent2,
+              title: 'FORMA RECIENTE',
+              subtitle: 'Récord y racha',
+              child: _NflForm(pred: pred),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if ((pred.nflH2hJuegos ?? 0) >= 2) ...[
+            _SectionCard(
+              icon: '🤝',
+              iconColor: kGold,
+              title: 'CARA A CARA',
+              subtitle: 'Serie reciente entre estos equipos',
+              child: _NflH2H(pred: pred),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+
         // Pitchers (solo béisbol / LVBP)
         if (isBaseballLike && pred.homePitcherName != null) ...[
           _SectionCard(
@@ -1500,6 +1540,156 @@ class _BballPropRow extends StatelessWidget {
           style: GoogleFonts.jetBrainsMono(
               fontSize: 9, fontWeight: FontWeight.w700, color: c)),
     );
+  }
+}
+
+// ── NFL: Ratings / Eficiencia / Forma / H2H ───────────────────────────────────
+
+class _NflRatings extends StatelessWidget {
+  final PredictionModel pred;
+  const _NflRatings({required this.pred});
+
+  static Color offColor(double? p) {
+    if (p == null) return kMuted;
+    if (p >= 26) return kGreen;
+    if (p >= 22) return const Color(0xFF84cc16);
+    if (p >= 19) return kGold;
+    return kRed;
+  }
+
+  static Color defColor(double? p) {
+    if (p == null) return kMuted;
+    if (p <= 18) return kGreen;
+    if (p <= 22) return const Color(0xFF84cc16);
+    if (p <= 25) return kGold;
+    return kRed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(child: _side(home, pred.nflHomeOff, pred.nflHomeDef, kAccent)),
+        const SizedBox(width: 10),
+        Expanded(child: _side(away, pred.nflAwayOff, pred.nflAwayDef, kAccent2)),
+      ]),
+    );
+  }
+
+  Widget _side(String team, double? off, double? def, Color bar) {
+    return Container(
+      decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: kBorder)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(height: 3, decoration: BoxDecoration(color: bar, borderRadius: const BorderRadius.vertical(top: Radius.circular(10)))),
+        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(team.toUpperCase(), style: GoogleFonts.bebasNeue(fontSize: 18, color: kText, letterSpacing: 1)),
+          const SizedBox(height: 8),
+          Text('OFENSIVA', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1.2)),
+          Text(off?.toStringAsFixed(1) ?? '—', style: GoogleFonts.bebasNeue(fontSize: 30, color: offColor(off), height: 1.0)),
+          const SizedBox(height: 8),
+          Text('DEFENSIVA', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1.2)),
+          Text(def?.toStringAsFixed(1) ?? '—', style: GoogleFonts.bebasNeue(fontSize: 30, color: defColor(def), height: 1.0)),
+          const SizedBox(height: 4),
+          Text('puntos por juego', style: GoogleFonts.dmSans(fontSize: 9, color: kMuted)),
+        ])),
+      ]),
+    );
+  }
+}
+
+class _NflEfficiency extends StatelessWidget {
+  final PredictionModel pred;
+  const _NflEfficiency({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return Column(children: [
+      _row(home, pred.nflHomeYpp, pred.nflHomeTov, true),
+      const SizedBox(height: 8),
+      _row(away, pred.nflAwayYpp, pred.nflAwayTov, false),
+    ]);
+  }
+
+  Widget _row(String team, double? ypp, double? tov, bool isHome) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(8), border: Border.all(color: kBorder)),
+      child: Row(children: [
+        Container(width: 3, height: 30, color: isHome ? kAccent : kAccent2),
+        const SizedBox(width: 10),
+        Expanded(child: Text(team.toUpperCase(), style: GoogleFonts.bebasNeue(fontSize: 15, color: kText, letterSpacing: 0.8))),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('${ypp?.toStringAsFixed(2) ?? '—'} yds/jugada', style: GoogleFonts.jetBrainsMono(fontSize: 11, color: kText, fontWeight: FontWeight.w700)),
+          Text('${tov?.toStringAsFixed(1) ?? '—'} pérdidas/juego', style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _NflForm extends StatelessWidget {
+  final PredictionModel pred;
+  const _NflForm({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Expanded(child: _side(home, pred.nflHomeFormW, pred.nflHomeFormL, pred.nflHomeStreak, kAccent)),
+      const SizedBox(width: 10),
+      Expanded(child: _side(away, pred.nflAwayFormW, pred.nflAwayFormL, pred.nflAwayStreak, kAccent2)),
+    ]));
+  }
+
+  Widget _side(String team, int? w, int? l, String? streak, Color bar) {
+    final isWin = (streak ?? '').startsWith('G');
+    final has = streak != null && streak.isNotEmpty;
+    final c = !has ? kMuted : (isWin ? kGreen : kRed);
+    final label = !has ? 'SIN RACHA' : (isWin ? '${streak.substring(1)} GANADOS' : '${streak.substring(1)} PERDIDOS');
+    return Container(
+      decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: kBorder)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(height: 3, decoration: BoxDecoration(color: bar, borderRadius: const BorderRadius.vertical(top: Radius.circular(10)))),
+        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(team.toUpperCase(), style: GoogleFonts.bebasNeue(fontSize: 17, color: kText, letterSpacing: 1)),
+          const SizedBox(height: 6),
+          Text('${w ?? 0}V - ${l ?? 0}D', style: GoogleFonts.bebasNeue(fontSize: 24, color: kText, height: 1.0)),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: c.withAlpha(30), borderRadius: BorderRadius.circular(6), border: Border.all(color: c.withAlpha(80))),
+            child: Text(label, style: GoogleFonts.bebasNeue(fontSize: 12, color: c, letterSpacing: 0.5)),
+          ),
+        ])),
+      ]),
+    );
+  }
+}
+
+class _NflH2H extends StatelessWidget {
+  final PredictionModel pred;
+  const _NflH2H({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.match.homeTeam.split(' ').last;
+    final away = pred.match.awayTeam.split(' ').last;
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+      Column(children: [
+        Text('${pred.nflH2hLocal ?? 0}', style: GoogleFonts.bebasNeue(fontSize: 32, color: kAccent)),
+        Text(home.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
+      ]),
+      Text('${pred.nflH2hJuegos ?? 0} juegos', style: GoogleFonts.dmSans(fontSize: 11, color: kMuted)),
+      Column(children: [
+        Text('${pred.nflH2hVisit ?? 0}', style: GoogleFonts.bebasNeue(fontSize: 32, color: kAccent2)),
+        Text(away.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: kMuted, letterSpacing: 1)),
+      ]),
+    ]);
   }
 }
 
