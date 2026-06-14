@@ -68,14 +68,19 @@ class MatchesProvider extends ChangeNotifier {
   }
 
   Future<void> refreshPrediction(int matchId, {String? token}) async {
+    // Refrescar = recargar la predicción GUARDADA (estable), NO recalcular.
+    // Recalcular en cada toque hacía bailar el % (Monte Carlo + datos en vivo).
+    // La predicción guardada es determinista; el marcador se actualiza aparte.
     if (_loadingPredictions.contains(matchId)) return;
     _loadingPredictions.add(matchId);
     _predictions.remove(matchId);
     notifyListeners();
     try {
-      final data = await ApiClient(token: token)
-          .post('/api/predictions/$matchId/refresh', {});
+      final data = await ApiClient(token: token).get('/api/predictions/$matchId');
       _predictions[matchId] = PredictionModel.fromJson(data);
+      _paywalled.remove(matchId);
+    } on ApiException catch (e) {
+      if (e.statusCode == 402) _paywalled.add(matchId);
     } catch (_) {
     } finally {
       _loadingPredictions.remove(matchId);
