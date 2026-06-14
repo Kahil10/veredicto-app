@@ -13,6 +13,7 @@ import 'chat_screen.dart';
 import 'live_games_screen.dart';
 import 'match_detail_screen.dart';
 import 'profile_screen.dart';
+import 'picks_screen.dart';
 import 'world_cup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: const [
           _MatchesTab(),
           LiveGamesScreen(),
+          PicksScreen(),
           ChatScreen(),
           ProfileScreen(),
         ],
@@ -56,6 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
               icon: _LiveTabIcon(active: _tab == 1),
               label: 'En Vivo'),
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.bolt_outlined),
+              activeIcon: Icon(Icons.bolt),
+              label: 'Picks'),
           const BottomNavigationBarItem(
               icon: Icon(Icons.auto_awesome_outlined),
               activeIcon: Icon(Icons.auto_awesome),
