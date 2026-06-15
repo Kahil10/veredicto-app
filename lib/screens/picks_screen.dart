@@ -136,22 +136,31 @@ class _PicksScreenState extends State<PicksScreen> {
         if (!hayPicks)
           _sinPicks()
         else ...[
-          _tierCard('LA FIJA', '⭐', kGold, d.fija,
-              'La jugada más segura del día'),
-          const SizedBox(height: 12),
-          _tierCard('DUPLETA', '🔗', kAccent3, d.dupleta,
-              'Las 2 más fuertes combinadas'),
-          const SizedBox(height: 12),
-          _tierCard('TRIPLETA', '🔥', kAccent, d.tripleta,
-              'Las 3 más fuertes combinadas'),
-          const SizedBox(height: 12),
-          // El pick grande se titula con su conteo REAL (no dice 7 si son 4)
-          _tierCard(
-              d.pickMaxN >= 7 ? 'PICK DE 7' : 'COMBINADA DE ${d.pickMaxN}',
-              '💰', kGreen, d.pick7,
-              d.pickMaxN >= 7
-                  ? 'Alto premio — la grande del día'
-                  : 'Combinada con los juegos disponibles ahora'),
+          // Cada nivel solo aparece si tiene sus patas COMPLETAS.
+          // 1 juego → solo La Fija. 2 → +Dupleta. 3 → +Tripleta. 4+ → +Combinada.
+          if (d.fija.completo)
+            _tierCard('LA FIJA', '⭐', kGold, d.fija,
+                'La jugada más segura del día'),
+          if (d.dupleta.completo) ...[
+            const SizedBox(height: 12),
+            _tierCard('DUPLETA', '🔗', kAccent3, d.dupleta,
+                'Las 2 más fuertes combinadas'),
+          ],
+          if (d.tripleta.completo) ...[
+            const SizedBox(height: 12),
+            _tierCard('TRIPLETA', '🔥', kAccent, d.tripleta,
+                'Las 3 más fuertes combinadas'),
+          ],
+          // La combinada grande solo si aporta sobre la tripleta (4+ juegos).
+          if (d.pickMaxN >= 4) ...[
+            const SizedBox(height: 12),
+            _tierCard(
+                d.pickMaxN >= 7 ? 'PICK DE 7' : 'COMBINADA DE ${d.pickMaxN}',
+                '💰', kGreen, d.pick7,
+                d.pickMaxN >= 7
+                    ? 'Alto premio — la grande del día'
+                    : 'Combinada con los juegos disponibles ahora'),
+          ],
         ],
 
         const SizedBox(height: 18),
