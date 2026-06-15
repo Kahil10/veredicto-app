@@ -95,7 +95,8 @@ class _PicksScreenState extends State<PicksScreen> {
             style: dmSans(12, color: kMuted)),
         const SizedBox(height: 10),
 
-        if (d.aviso != null) ...[
+        // Estado del día (completo / parcial con su explicación)
+        if (d.esParcial && d.mensajeHorario != null) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -103,10 +104,30 @@ class _PicksScreenState extends State<PicksScreen> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: kGold.withValues(alpha: 0.4)),
             ),
-            child: Row(children: [
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Icon(Icons.access_time_rounded, color: kGold, size: 18),
               const SizedBox(width: 10),
-              Expanded(child: Text(d.aviso!, style: dmSans(12, color: kText))),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('PICK PARCIAL', style: bebasNeue(14, color: kGold, letterSpacing: 1)),
+                const SizedBox(height: 2),
+                Text(d.mensajeHorario!, style: dmSans(12, color: kText)),
+              ])),
+            ]),
+          ),
+          const SizedBox(height: 14),
+        ] else if (!d.esParcial) ...[
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: kGreen.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kGreen.withValues(alpha: 0.4)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.verified_rounded, color: kGreen, size: 18),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Pick del Día completo — la jornada fuerte está activa',
+                  style: dmSans(12, color: kText))),
             ]),
           ),
           const SizedBox(height: 14),
@@ -124,8 +145,13 @@ class _PicksScreenState extends State<PicksScreen> {
           _tierCard('TRIPLETA', '🔥', kAccent, d.tripleta,
               'Las 3 más fuertes combinadas'),
           const SizedBox(height: 12),
-          _tierCard('PICK DE 7', '💰', kGreen, d.pick7,
-              'Alto premio — la grande del día'),
+          // El pick grande se titula con su conteo REAL (no dice 7 si son 4)
+          _tierCard(
+              d.pickMaxN >= 7 ? 'PICK DE 7' : 'COMBINADA DE ${d.pickMaxN}',
+              '💰', kGreen, d.pick7,
+              d.pickMaxN >= 7
+                  ? 'Alto premio — la grande del día'
+                  : 'Combinada con los juegos disponibles ahora'),
         ],
 
         const SizedBox(height: 18),

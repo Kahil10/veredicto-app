@@ -64,7 +64,10 @@ class PicksDelDia {
   final String fecha;
   final int juegosAnalizados;
   final int juegosYaEmpezados;
-  final String? aviso;
+  final int jugadasDisponibles;
+  final String estado;          // completo | parcial
+  final String? mensajeHorario;
+  final int pickMaxN;           // patas reales del pick grande
   final PickTier fija;
   final PickTier dupleta;
   final PickTier tripleta;
@@ -74,18 +77,26 @@ class PicksDelDia {
     required this.fecha,
     required this.juegosAnalizados,
     required this.juegosYaEmpezados,
-    this.aviso,
+    required this.jugadasDisponibles,
+    required this.estado,
+    this.mensajeHorario,
+    required this.pickMaxN,
     required this.fija,
     required this.dupleta,
     required this.tripleta,
     required this.pick7,
   });
 
+  bool get esParcial => estado == 'parcial';
+
   factory PicksDelDia.fromJson(Map<String, dynamic> j) => PicksDelDia(
         fecha: j['fecha'] ?? '',
         juegosAnalizados: (j['juegos_analizados'] as num?)?.toInt() ?? 0,
         juegosYaEmpezados: (j['juegos_ya_empezados'] as num?)?.toInt() ?? 0,
-        aviso: j['aviso'],
+        jugadasDisponibles: (j['jugadas_disponibles'] as num?)?.toInt() ?? 0,
+        estado: j['estado'] ?? 'completo',
+        mensajeHorario: j['mensaje_horario'] ?? j['aviso'],
+        pickMaxN: (j['pick_max_n'] as num?)?.toInt() ?? 0,
         fija: PickTier.fromJson(j['fija'] ?? {}),
         dupleta: PickTier.fromJson(j['dupleta'] ?? {}),
         tripleta: PickTier.fromJson(j['tripleta'] ?? {}),
