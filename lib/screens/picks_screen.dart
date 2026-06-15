@@ -120,71 +120,72 @@ class _PicksScreenState extends State<PicksScreen> {
             style: dmSans(12, color: kMuted)),
         const SizedBox(height: 10),
 
-        // Estado del día (completo / parcial con su explicación)
-        if (d.esParcial && d.mensajeHorario != null) ...[
+        // ── CASO 1: no quedan juegos hoy ────────────────────────────────────
+        if (d.esSinJuegos)
+          _mensajeFin('🕐', 'No hay juegos por jugar hoy', d.mensajeHorario)
+
+        // ── CASO 2: pocos juegos (1-4) → analiza a tu criterio ──────────────
+        else if (d.esPocos) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: kGold.withValues(alpha: 0.12),
+              color: kAccent3.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kGold.withValues(alpha: 0.4)),
+              border: Border.all(color: kAccent3.withValues(alpha: 0.4)),
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Icon(Icons.access_time_rounded, color: kGold, size: 18),
+              const Icon(Icons.search_rounded, color: kAccent3, size: 18),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('PICK PARCIAL', style: bebasNeue(14, color: kGold, letterSpacing: 1)),
+                Text('POCOS JUEGOS DISPONIBLES',
+                    style: bebasNeue(14, color: kAccent3, letterSpacing: 1)),
                 const SizedBox(height: 2),
-                Text(d.mensajeHorario!, style: dmSans(12, color: kText)),
+                Text(d.mensajeHorario ?? '', style: dmSans(12, color: kText)),
               ])),
             ]),
           ),
           const SizedBox(height: 14),
-        ] else if (!d.esParcial) ...[
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: kGreen.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kGreen.withValues(alpha: 0.4)),
-            ),
-            child: Row(children: [
-              const Icon(Icons.verified_rounded, color: kGreen, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text('Pick del Día completo — la jornada fuerte está activa',
-                  style: dmSans(12, color: kText))),
-            ]),
-          ),
-          const SizedBox(height: 14),
-        ],
+          ...d.juegosRestantes.map((j) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _juegoRestante(j),
+              )),
+        ]
 
-        if (!hayPicks)
-          _sinPicks()
+        // ── CASO 3: pick normal (completo o parcial) ────────────────────────
         else ...[
-          // Cada nivel solo aparece si tiene sus patas COMPLETAS.
-          // 1 juego → solo La Fija. 2 → +Dupleta. 3 → +Tripleta. 4+ → +Combinada.
-          if (d.fija.completo)
-            _tierCard('LA FIJA', '⭐', kGold, d.fija,
-                'La jugada más segura del día'),
-          if (d.dupleta.completo) ...[
-            const SizedBox(height: 12),
-            _tierCard('DUPLETA', '🔗', kAccent3, d.dupleta,
-                'Las 2 más fuertes combinadas'),
+          if (d.esParcial) ...[
+            _banner(kGold, Icons.access_time_rounded, 'PICK PARCIAL', d.mensajeHorario),
+            const SizedBox(height: 14),
+          ] else ...[
+            _banner(kGreen, Icons.verified_rounded, 'PICK DEL DÍA COMPLETO',
+                'La jornada fuerte está activa — este es nuestro mejor pronóstico.'),
+            const SizedBox(height: 14),
           ],
-          if (d.tripleta.completo) ...[
-            const SizedBox(height: 12),
-            _tierCard('TRIPLETA', '🔥', kAccent, d.tripleta,
-                'Las 3 más fuertes combinadas'),
-          ],
-          // La combinada grande solo si aporta sobre la tripleta (4+ juegos).
-          if (d.pickMaxN >= 4) ...[
-            const SizedBox(height: 12),
-            _tierCard(
-                d.pickMaxN >= 7 ? 'PICK DE 7' : 'COMBINADA DE ${d.pickMaxN}',
-                '💰', kGreen, d.pick7,
-                d.pickMaxN >= 7
-                    ? 'Alto premio — la grande del día'
-                    : 'Combinada con los juegos disponibles ahora'),
+          if (!hayPicks)
+            _mensajeFin('🤔', 'No hay jugadas de alta confianza ahora', d.mensajeHorario)
+          else ...[
+            if (d.fija.completo)
+              _tierCard('LA FIJA', '⭐', kGold, d.fija,
+                  'La jugada más segura del día'),
+            if (d.dupleta.completo) ...[
+              const SizedBox(height: 12),
+              _tierCard('DUPLETA', '🔗', kAccent3, d.dupleta,
+                  'Las 2 más fuertes combinadas'),
+            ],
+            if (d.tripleta.completo) ...[
+              const SizedBox(height: 12),
+              _tierCard('TRIPLETA', '🔥', kAccent, d.tripleta,
+                  'Las 3 más fuertes combinadas'),
+            ],
+            if (d.pickMaxN >= 4) ...[
+              const SizedBox(height: 12),
+              _tierCard(
+                  d.pickMaxN >= 7 ? 'PICK DE 7' : 'COMBINADA DE ${d.pickMaxN}',
+                  '💰', kGreen, d.pick7,
+                  d.pickMaxN >= 7
+                      ? 'Alto premio — la grande del día'
+                      : 'Combinada con los juegos disponibles ahora'),
+            ],
           ],
         ],
 
@@ -208,7 +209,7 @@ class _PicksScreenState extends State<PicksScreen> {
     );
   }
 
-  Widget _sinPicks() => Container(
+  Widget _mensajeFin(String emoji, String titulo, String? cuerpo) => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: kSurface,
@@ -216,16 +217,62 @@ class _PicksScreenState extends State<PicksScreen> {
           border: Border.all(color: kBorder),
         ),
         child: Column(children: [
-          const Text('🕐', style: TextStyle(fontSize: 36)),
+          Text(emoji, style: const TextStyle(fontSize: 36)),
           const SizedBox(height: 10),
-          Text('Sin picks disponibles ahora',
-              style: bebasNeue(18, color: kText), textAlign: TextAlign.center),
-          const SizedBox(height: 6),
-          Text(
-            'Los juegos del día ya comenzaron o aún no hay suficientes partidos '
-            'programados. Vuelve más tarde para el pick de la próxima jornada.',
-            style: dmSans(12, color: kMuted),
-            textAlign: TextAlign.center,
+          Text(titulo, style: bebasNeue(18, color: kText), textAlign: TextAlign.center),
+          if (cuerpo != null) ...[
+            const SizedBox(height: 6),
+            Text(cuerpo, style: dmSans(12, color: kMuted), textAlign: TextAlign.center),
+          ],
+        ]),
+      );
+
+  Widget _banner(Color color, IconData icon, String titulo, String? texto) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(titulo, style: bebasNeue(14, color: color, letterSpacing: 1)),
+            if (texto != null) ...[
+              const SizedBox(height: 2),
+              Text(texto, style: dmSans(12, color: kText)),
+            ],
+          ])),
+        ]),
+      );
+
+  // Tarjeta simple de un juego restante (modo "pocos juegos", a criterio del usuario)
+  Widget _juegoRestante(PickLeg j) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: kBorder),
+        ),
+        child: Row(children: [
+          Text(j.emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(j.seleccion, style: dmSans(13, color: kText, weight: FontWeight.w600)),
+              Text('${j.enfrentamiento}  ·  ${j.liga}', style: dmSans(10, color: kMuted)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: kMuted.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text('${j.probabilidad.toStringAsFixed(0)}%',
+                style: jetMono(12, color: kMuted, weight: FontWeight.w700)),
           ),
         ]),
       );

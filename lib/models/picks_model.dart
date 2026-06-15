@@ -65,9 +65,11 @@ class PicksDelDia {
   final int juegosAnalizados;
   final int juegosYaEmpezados;
   final int jugadasDisponibles;
-  final String estado;          // completo | parcial
+  final int nsTotal;
+  final String estado;          // completo | parcial | pocos | sin_juegos
   final String? mensajeHorario;
-  final int pickMaxN;           // patas reales del pick grande
+  final int pickMaxN;
+  final List<PickLeg> juegosRestantes;           // patas reales del pick grande
   final PickTier fija;
   final PickTier dupleta;
   final PickTier tripleta;
@@ -78,9 +80,11 @@ class PicksDelDia {
     required this.juegosAnalizados,
     required this.juegosYaEmpezados,
     required this.jugadasDisponibles,
+    required this.nsTotal,
     required this.estado,
     this.mensajeHorario,
     required this.pickMaxN,
+    required this.juegosRestantes,
     required this.fija,
     required this.dupleta,
     required this.tripleta,
@@ -88,15 +92,22 @@ class PicksDelDia {
   });
 
   bool get esParcial => estado == 'parcial';
+  bool get esPocos => estado == 'pocos';
+  bool get esSinJuegos => estado == 'sin_juegos';
+  bool get esCompleto => estado == 'completo';
 
   factory PicksDelDia.fromJson(Map<String, dynamic> j) => PicksDelDia(
         fecha: j['fecha'] ?? '',
         juegosAnalizados: (j['juegos_analizados'] as num?)?.toInt() ?? 0,
         juegosYaEmpezados: (j['juegos_ya_empezados'] as num?)?.toInt() ?? 0,
         jugadasDisponibles: (j['jugadas_disponibles'] as num?)?.toInt() ?? 0,
+        nsTotal: (j['ns_total'] as num?)?.toInt() ?? 0,
         estado: j['estado'] ?? 'completo',
         mensajeHorario: j['mensaje_horario'] ?? j['aviso'],
         pickMaxN: (j['pick_max_n'] as num?)?.toInt() ?? 0,
+        juegosRestantes: ((j['juegos_restantes'] as List?) ?? [])
+            .map((e) => PickLeg.fromJson(e as Map<String, dynamic>))
+            .toList(),
         fija: PickTier.fromJson(j['fija'] ?? {}),
         dupleta: PickTier.fromJson(j['dupleta'] ?? {}),
         tripleta: PickTier.fromJson(j['tripleta'] ?? {}),
