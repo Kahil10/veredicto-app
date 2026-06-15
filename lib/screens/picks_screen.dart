@@ -22,16 +22,6 @@ class _PicksScreenState extends State<PicksScreen> {
   void initState() {
     super.initState();
     _fetch();
-    _maybeMostrarGuia();
-  }
-
-  Future<void> _maybeMostrarGuia() async {
-    if (await GuiaScreen.debeMostrarse() && mounted) {
-      // Esperar a que la pantalla esté montada antes de abrir la guía
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _abrirGuia();
-      });
-    }
   }
 
   void _abrirGuia() {

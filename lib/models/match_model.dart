@@ -77,6 +77,16 @@ class MatchModel {
 
   bool get isLive => ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].contains(status);
   bool get isFinished => ['FT', 'AET', 'PEN', 'F', 'Final'].contains(status);
-  bool get isPostponed => status == 'PPD';
+  bool get isPostponed => status == 'PPD' || status == 'PST';
+  bool get isCanceled => ['CANC', 'CANCELLED', 'CANCELED'].contains(status);
+  bool get isSuspended => ['SUSP', 'SUSPENDED'].contains(status);
   bool get isScheduled => status == 'NS';
+
+  /// Etiqueta clara para estados especiales (no jugados normalmente). null si no aplica.
+  String? get estadoEspecial {
+    if (isCanceled) return 'CANCELADO';
+    if (isSuspended) return 'SUSPENDIDO';
+    if (isPostponed) return 'POSPUESTO';
+    return null;
+  }
 }

@@ -204,16 +204,22 @@ class _ScoreOrTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (match.isPostponed) {
+    // Estados especiales: suspendido / cancelado / pospuesto → etiqueta clara
+    // (antes caían al "else" y mostraban la hora, como si no hubieran empezado).
+    final especial = match.estadoEspecial;
+    if (especial != null) {
+      final rojo = match.isCanceled || match.isSuspended;
+      final color = rojo ? const Color(0xFFef4444) : kGold;
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        margin: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: color.withAlpha(28),
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withAlpha(90)),
         ),
-        child: const Text('PPD',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kMuted)),
+        child: Text(especial,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
       );
     }
     if (match.isLive || match.isFinished) {

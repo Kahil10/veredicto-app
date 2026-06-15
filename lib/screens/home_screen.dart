@@ -14,6 +14,7 @@ import 'live_games_screen.dart';
 import 'match_detail_screen.dart';
 import 'profile_screen.dart';
 import 'picks_screen.dart';
+import 'guia_screen.dart';
 import 'world_cup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,7 +50,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tab,
-        onTap: (i) => setState(() => _tab = i),
+        onTap: (i) {
+          // Al entrar a Picks (índice 2), mostrar la guía explicativa.
+          // La gente la lee y puede dar "Saltar". Se abre cada vez que entran.
+          if (i == 2 && _tab != 2) {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const GuiaScreen(),
+              fullscreenDialog: true,
+            ));
+          }
+          setState(() => _tab = i);
+        },
         items: [
           const BottomNavigationBarItem(
               icon: Icon(Icons.sports_baseball_outlined),
