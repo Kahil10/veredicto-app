@@ -15,6 +15,7 @@ class PicksScreen extends StatefulWidget {
 
 class _PicksScreenState extends State<PicksScreen> {
   PicksDelDia? _data;
+  Map<String, dynamic>? _record;
   bool _loading = true;
   bool _failed = false;
 
@@ -38,10 +39,16 @@ class _PicksScreenState extends State<PicksScreen> {
     });
     try {
       final token = context.read<AuthProvider>().token;
-      final data = await ApiClient(token: token).get('/api/picks/today');
+      final api = ApiClient(token: token);
+      final data = await api.get('/api/picks/today');
+      Map<String, dynamic>? rec;
+      try {
+        rec = await api.get('/api/picks/record') as Map<String, dynamic>;
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _data = PicksDelDia.fromJson(data as Map<String, dynamic>);
+          _record = rec;
           _loading = false;
         });
       }
@@ -109,6 +116,12 @@ class _PicksScreenState extends State<PicksScreen> {
         Text('${d.juegosAnalizados} juegos analizados hoy',
             style: dmSans(12, color: kMuted)),
         const SizedBox(height: 10),
+
+        // Track record (credibilidad)
+        if (_record != null) ...[
+          _recordCard(_record!),
+          const SizedBox(height: 14),
+        ],
 
         // ── CASO 1: no quedan juegos hoy ────────────────────────────────────
         if (d.esSinJuegos)
@@ -196,6 +209,89 @@ class _PicksScreenState extends State<PicksScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Tarjeta de historial de aciertos (track record) — credibilidad
+  Widget _recordCard(Map<String, dynamic> rec) {
+    final fija = (rec['fija'] ?? {}) as Map<String, dynamic>;
+    final general = (rec['general'] ?? {}) as Map<String, dynamic>;
+    final fijaTotal = (fija['total'] as num?)?.toInt() ?? 0;
+    final genTotal = (general['total'] as num?)?.toInt() ?? 0;
+    final ultimas = (rec['ultimas_fijas'] as List?) ?? [];
+
+    // Si aún no hay nada evaluado, mostrar mensaje de "construyéndose"
+    if (fijaTotal == 0 && genTotal == 0) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kBorder),
+        ),
+        child: Row(children: [
+          const Icon(Icons.insights_rounded, color: kAccent, size: 18),
+          const SizedBox(width: 10),
+          Expanded(child: Text(
+            'Historial de aciertos en construcción — se actualiza al terminar '
+            'los juegos de cada día.',
+            style: dmSans(11, color: kMuted),
+          )),
+        ]),
+      );
+    }
+
+    Widget stat(String label, Map<String, dynamic> a, Color color) {
+      final ac = (a['aciertos'] as num?)?.toInt() ?? 0;
+      final tot = (a['total'] as num?)?.toInt() ?? 0;
+      final pct = (a['pct'] as num?)?.toDouble() ?? 0;
+      return Column(children: [
+        Text(label, style: jetMono(9, color: kMuted, weight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text('${pct.toStringAsFixed(0)}%', style: bebasNeue(26, color: color)),
+        Text('$ac de $tot', style: dmSans(10, color: kMuted)),
+      ]);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kGreen.withValues(alpha: 0.35)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.military_tech_rounded, color: kGreen, size: 18),
+          const SizedBox(width: 8),
+          Text('HISTORIAL DE ACIERTOS', style: bebasNeue(15, color: kGreen, letterSpacing: 1)),
+        ]),
+        const SizedBox(height: 12),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+          stat('LA FIJA', fija, kGold),
+          Container(width: 1, height: 44, color: kBorder),
+          stat('GENERAL', general, kAccent),
+        ]),
+        if (ultimas.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text('ÚLTIMAS FIJAS', style: jetMono(8, color: kMuted, weight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 5, runSpacing: 5, children: ultimas.take(10).map<Widget>((u) {
+            final ok = u['resultado'] == 'acierto';
+            return Container(
+              width: 22, height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: (ok ? kGreen : kRed).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: (ok ? kGreen : kRed).withValues(alpha: 0.5)),
+              ),
+              child: Text(ok ? '✓' : '✗',
+                  style: TextStyle(color: ok ? kGreen : kRed, fontSize: 12, fontWeight: FontWeight.w800)),
+            );
+          }).toList()),
+        ],
+      ]),
     );
   }
 
