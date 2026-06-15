@@ -6,6 +6,7 @@ import '../core/config.dart';
 import '../core/theme.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
+import 'guia_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -118,6 +119,34 @@ class ProfileScreen extends StatelessWidget {
 
                   // Créditos / predicciones diarias
                   _CreditsCard(user: user),
+
+                  const SizedBox(height: 12),
+
+                  // Guía de uso
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const GuiaScreen(),
+                      fullscreenDialog: true,
+                    )),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: kBorder),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.menu_book_rounded, color: kAccent, size: 20),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text('Guía de uso — cómo armar tus picks',
+                              style: TextStyle(
+                                  color: kText, fontSize: 14, fontWeight: FontWeight.w600)),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: kMuted),
+                      ]),
+                    ),
+                  ),
 
                   const SizedBox(height: 24),
 

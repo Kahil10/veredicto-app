@@ -4,6 +4,7 @@ import '../core/api_client.dart';
 import '../core/theme.dart';
 import '../models/picks_model.dart';
 import '../providers/auth_provider.dart';
+import 'guia_screen.dart';
 
 class PicksScreen extends StatefulWidget {
   const PicksScreen({super.key});
@@ -21,6 +22,23 @@ class _PicksScreenState extends State<PicksScreen> {
   void initState() {
     super.initState();
     _fetch();
+    _maybeMostrarGuia();
+  }
+
+  Future<void> _maybeMostrarGuia() async {
+    if (await GuiaScreen.debeMostrarse() && mounted) {
+      // Esperar a que la pantalla esté montada antes de abrir la guía
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _abrirGuia();
+      });
+    }
+  }
+
+  void _abrirGuia() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => const GuiaScreen(),
+      fullscreenDialog: true,
+    ));
   }
 
   Future<void> _fetch() async {
@@ -56,6 +74,13 @@ class _PicksScreenState extends State<PicksScreen> {
             Text('PICKS DEL DÍA', style: bebasNeue(20, letterSpacing: 1.5)),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'Cómo usar',
+            onPressed: _abrirGuia,
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kAccent))
