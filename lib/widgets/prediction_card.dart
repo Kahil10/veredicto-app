@@ -341,6 +341,19 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
+        // Hits de jugador (béisbol)
+        if (isBaseballLike &&
+            ((pred.hitsHome?.isNotEmpty ?? false) || (pred.hitsAway?.isNotEmpty ?? false))) ...[
+          _SectionCard(
+            icon: '🥎',
+            iconColor: kAccent,
+            title: 'HITS DE JUGADOR',
+            subtitle: '¿Quién conecta hit? Bateadores regulares con mejor promedio',
+            child: _HitsContent(pred: pred),
+          ),
+          const SizedBox(height: 10),
+        ],
+
         // Head-to-Head (solo béisbol / LVBP)
         if (isBaseballLike && (pred.h2hJuegos ?? 0) >= 2) ...[
           _SectionCard(
@@ -1071,6 +1084,57 @@ class _F5Content extends StatelessWidget {
         ]),
       ]),
     ]);
+  }
+}
+
+// ── Hits de jugador ─────────────────────────────────────────────────────────
+
+class _HitsContent extends StatelessWidget {
+  final PredictionModel pred;
+  const _HitsContent({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final home = pred.hitsHome ?? const [];
+    final away = pred.hitsAway ?? const [];
+    final homeTeam = pred.match.homeTeam.split(' ').last;
+    final awayTeam = pred.match.awayTeam.split(' ').last;
+    return Column(children: [
+      ...home.map((h) => _hitRow(h, homeTeam, true)),
+      ...away.map((h) => _hitRow(h, awayTeam, false)),
+    ]);
+  }
+
+  Widget _hitRow(Map<String, dynamic> h, String team, bool isHome) {
+    final player = (h['player'] ?? '—').toString();
+    final avg = (h['avg'] as num?)?.toDouble() ?? 0;
+    final prob = (h['prob'] as num?)?.toDouble() ?? 0;
+    final barColor = isHome ? kAccent : kAccent2;
+    // AVG sin el 0 inicial (.355)
+    final avgTxt = avg.toStringAsFixed(3).replaceFirst('0.', '.');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: kSurface2,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: kBorder),
+      ),
+      child: Row(children: [
+        Container(width: 3, height: 34, color: barColor),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(player.toUpperCase(),
+              style: GoogleFonts.bebasNeue(fontSize: 16, color: kText, letterSpacing: 0.8)),
+          Text('$team · AVG $avgTxt', style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+        ])),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('${prob.toStringAsFixed(0)}%',
+              style: GoogleFonts.bebasNeue(fontSize: 22, color: kGreen)),
+          Text('CONECTA HIT', style: GoogleFonts.jetBrainsMono(fontSize: 7, color: kMuted, letterSpacing: 1)),
+        ]),
+      ]),
+    );
   }
 }
 

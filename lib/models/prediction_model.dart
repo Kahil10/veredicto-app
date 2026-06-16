@@ -48,6 +48,9 @@ class PredictionModel {
   final double? f5TiePct;
   final double? f5AwayPct;
   final String? f5PitcherFavorito;
+  // Hits de jugador (béisbol)
+  final List<Map<String, dynamic>>? hitsHome;
+  final List<Map<String, dynamic>>? hitsAway;
 
   // Baloncesto — ratings, ritmo, descanso, H2H
   final double? bballHomeOrtg;
@@ -154,6 +157,8 @@ class PredictionModel {
     this.f5TiePct,
     this.f5AwayPct,
     this.f5PitcherFavorito,
+    this.hitsHome,
+    this.hitsAway,
     this.bballHomeOrtg,
     this.bballHomeDrtg,
     this.bballAwayOrtg,
@@ -254,6 +259,10 @@ class PredictionModel {
         f5TiePct: (j['f5_tie_pct'] as num?)?.toDouble(),
         f5AwayPct: (j['f5_away_pct'] as num?)?.toDouble(),
         f5PitcherFavorito: j['f5_pitcher_favorito'] as String?,
+        hitsHome: (j['hits_home'] as List?)
+            ?.map((e) => (e as Map).cast<String, dynamic>()).toList(),
+        hitsAway: (j['hits_away'] as List?)
+            ?.map((e) => (e as Map).cast<String, dynamic>()).toList(),
         bballHomeOrtg: (j['bball_home_ortg'] as num?)?.toDouble(),
         bballHomeDrtg: (j['bball_home_drtg'] as num?)?.toDouble(),
         bballAwayOrtg: (j['bball_away_ortg'] as num?)?.toDouble(),
