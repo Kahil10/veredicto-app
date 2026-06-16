@@ -6,6 +6,7 @@ import '../models/match_model.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/live_game_widget.dart';
 import '../widgets/nba_live_widget.dart';
+import '../widgets/soccer_live_widget.dart';
 
 class LiveMatchScreen extends StatelessWidget {
   final MatchModel match;
@@ -51,10 +52,12 @@ class LiveMatchScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         // La vista en vivo depende del deporte: béisbol = diamante;
-        // básquet = marcador + jugada por jugada.
+        // básquet = marcador + jugada por jugada; fútbol = marcador + incidencias.
         child: match.sport == 'basketball'
             ? NbaLiveWidget(match: match)
-            : LiveGameWidget(match: match, token: token),
+            : (match.sport == 'football' || match.sport == 'football_ven')
+                ? SoccerLiveWidget(match: match)
+                : LiveGameWidget(match: match, token: token),
       ),
     );
   }
