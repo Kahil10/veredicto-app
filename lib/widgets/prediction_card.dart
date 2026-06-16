@@ -311,7 +311,7 @@ class PredictionCard extends StatelessWidget {
             icon: '⚾',
             iconColor: const Color(0xFFe8ff3a),
             title: 'PITCHERS TITULARES',
-            subtitle: 'Abridores probables · ERA temporada',
+            subtitle: 'Abridor probable (sujeto a confirmación) · ERA temporada',
             child: _PitcherGrid(pred: pred),
           ),
           const SizedBox(height: 10),
