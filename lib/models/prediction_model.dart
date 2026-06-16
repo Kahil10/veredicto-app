@@ -39,6 +39,16 @@ class PredictionModel {
   final double? awayBullpenEra;
   final String? awayBullpenLabel;
 
+  // Primeras 5 entradas (F5) — béisbol
+  final String? f5Favorito;
+  final double? f5NoPierdePct;
+  final double? f5HomeRunsExp;
+  final double? f5AwayRunsExp;
+  final double? f5HomePct;
+  final double? f5TiePct;
+  final double? f5AwayPct;
+  final String? f5PitcherFavorito;
+
   // Baloncesto — ratings, ritmo, descanso, H2H
   final double? bballHomeOrtg;
   final double? bballHomeDrtg;
@@ -136,6 +146,14 @@ class PredictionModel {
     this.homeBullpenLabel,
     this.awayBullpenEra,
     this.awayBullpenLabel,
+    this.f5Favorito,
+    this.f5NoPierdePct,
+    this.f5HomeRunsExp,
+    this.f5AwayRunsExp,
+    this.f5HomePct,
+    this.f5TiePct,
+    this.f5AwayPct,
+    this.f5PitcherFavorito,
     this.bballHomeOrtg,
     this.bballHomeDrtg,
     this.bballAwayOrtg,
@@ -228,6 +246,14 @@ class PredictionModel {
         homeBullpenLabel: j['home_bullpen_label'] as String?,
         awayBullpenEra:   (j['away_bullpen_era'] as num?)?.toDouble(),
         awayBullpenLabel: j['away_bullpen_label'] as String?,
+        f5Favorito: j['f5_favorito'] as String?,
+        f5NoPierdePct: (j['f5_no_pierde_pct'] as num?)?.toDouble(),
+        f5HomeRunsExp: (j['f5_home_runs_exp'] as num?)?.toDouble(),
+        f5AwayRunsExp: (j['f5_away_runs_exp'] as num?)?.toDouble(),
+        f5HomePct: (j['f5_home_pct'] as num?)?.toDouble(),
+        f5TiePct: (j['f5_tie_pct'] as num?)?.toDouble(),
+        f5AwayPct: (j['f5_away_pct'] as num?)?.toDouble(),
+        f5PitcherFavorito: j['f5_pitcher_favorito'] as String?,
         bballHomeOrtg: (j['bball_home_ortg'] as num?)?.toDouble(),
         bballHomeDrtg: (j['bball_home_drtg'] as num?)?.toDouble(),
         bballAwayOrtg: (j['bball_away_ortg'] as num?)?.toDouble(),

@@ -329,6 +329,18 @@ class PredictionCard extends StatelessWidget {
           const SizedBox(height: 10),
         ],
 
+        // Primeras 5 entradas (F5) — la jugada más fija (depende del abridor)
+        if (isBaseballLike && pred.f5Favorito != null && pred.f5NoPierdePct != null) ...[
+          _SectionCard(
+            icon: '⭐',
+            iconColor: kGreen,
+            title: 'PRIMERAS 5 ENTRADAS',
+            subtitle: 'La jugada más fija — depende del abridor, no del bullpen',
+            child: _F5Content(pred: pred),
+          ),
+          const SizedBox(height: 10),
+        ],
+
         // Head-to-Head (solo béisbol / LVBP)
         if (isBaseballLike && (pred.h2hJuegos ?? 0) >= 2) ...[
           _SectionCard(
@@ -995,6 +1007,69 @@ class _H2HContent extends StatelessWidget {
           ]),
         ],
       ),
+    ]);
+  }
+}
+
+// ── Primeras 5 entradas (F5) ───────────────────────────────────────────────────
+
+class _F5Content extends StatelessWidget {
+  final PredictionModel pred;
+  const _F5Content({required this.pred});
+
+  @override
+  Widget build(BuildContext context) {
+    final fav = pred.f5Favorito ?? '';
+    final pit = pred.f5PitcherFavorito;
+    final noPierde = pred.f5NoPierdePct ?? 0;
+    final hr = pred.f5HomeRunsExp ?? 0;
+    final ar = pred.f5AwayRunsExp ?? 0;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Jugada destacada
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: kGreen.withAlpha(20),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: kGreen.withAlpha(70)),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${fav.split(' ').last.toUpperCase()} GANA O EMPATA',
+                  style: GoogleFonts.bebasNeue(fontSize: 18, color: kGreen, letterSpacing: 1)),
+              Text('las primeras 5 entradas',
+                  style: GoogleFonts.dmSans(fontSize: 11, color: kMuted)),
+              if (pit != null)
+                Text('Abridor: $pit',
+                    style: GoogleFonts.dmSans(fontSize: 10, color: kMuted)),
+            ]),
+          ),
+          Text('${noPierde.toStringAsFixed(0)}%',
+              style: GoogleFonts.bebasNeue(fontSize: 30, color: kGreen)),
+        ]),
+      ),
+      const SizedBox(height: 10),
+      // Carreras esperadas en 5 entradas
+      Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+        Column(children: [
+          Text(hr.toStringAsFixed(1),
+              style: GoogleFonts.bebasNeue(fontSize: 24, color: kAccent)),
+          Text(pred.match.homeTeam.split(' ').last.toUpperCase(),
+              style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1)),
+        ]),
+        Column(children: [
+          Text('CARRERAS EST.', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1)),
+          Text('AL 5to', style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1)),
+        ]),
+        Column(children: [
+          Text(ar.toStringAsFixed(1),
+              style: GoogleFonts.bebasNeue(fontSize: 24, color: kAccent2)),
+          Text(pred.match.awayTeam.split(' ').last.toUpperCase(),
+              style: GoogleFonts.jetBrainsMono(fontSize: 8, color: kMuted, letterSpacing: 1)),
+        ]),
+      ]),
     ]);
   }
 }
