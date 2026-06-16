@@ -68,6 +68,17 @@ class NotificationsService {
     // Handler primer plano — mostrar con local notifications
     FirebaseMessaging.onMessage.listen(_showForeground);
 
+    // Tap en la notificación con la app en segundo plano → navegar
+    FirebaseMessaging.onMessageOpenedApp.listen((m) => _routeFromData(m.data));
+
+    // Tap que abrió la app desde cerrada (terminada)
+    final initial = await _messaging.getInitialMessage();
+    if (initial != null) {
+      // Esperar a que el árbol de navegación esté listo
+      Future.delayed(const Duration(milliseconds: 600),
+          () => _routeFromData(initial.data));
+    }
+
     // Obtener y guardar el token FCM localmente — el registro en backend
     // requiere auth y se hace desde AuthProvider después del login.
     _fcmToken = await _messaging.getToken();
@@ -129,18 +140,31 @@ class NotificationsService {
     final payload = response.payload;
     if (payload != null) {
       try {
-        final data = jsonDecode(payload) as Map<String, dynamic>;
-        final matchIdStr = data['match_id'] as String?;
-        if (matchIdStr != null) {
-          final matchId = int.tryParse(matchIdStr);
-          if (matchId != null) {
-            _navigateToMatch(matchId);
-            return;
-          }
-        }
+        _routeFromData(jsonDecode(payload) as Map<String, dynamic>);
+        return;
       } catch (_) {}
     }
-    // Fallback: ir a home
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => true);
+  }
+
+  /// Decide a dónde navegar según el contenido de la notificación.
+  static void _routeFromData(Map<String, dynamic> data) {
+    final tipo = data['type']?.toString();
+    // Pick del Día → abrir la pestaña Picks (índice 2) en Home
+    if (tipo == 'pick_del_dia') {
+      requestedHomeTab.value = 2;
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => true);
+      return;
+    }
+    // Partido específico → abrir su detalle
+    final matchIdStr = data['match_id']?.toString();
+    if (matchIdStr != null) {
+      final matchId = int.tryParse(matchIdStr);
+      if (matchId != null) {
+        _navigateToMatch(matchId);
+        return;
+      }
+    }
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => true);
   }
 

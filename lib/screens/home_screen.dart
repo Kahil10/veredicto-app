@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/config.dart';
 import '../core/theme.dart';
+import '../core/navigator_key.dart';
 import '../providers/auth_provider.dart';
 import '../providers/matches_provider.dart';
 import '../widgets/match_card.dart';
@@ -32,7 +33,24 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final token = context.read<AuthProvider>().token;
       context.read<MatchesProvider>().loadMatches(token: token);
+      // Si una notificación pidió abrir una pestaña (ej. Picks), aplicarlo.
+      _aplicarPestanaSolicitada();
     });
+    requestedHomeTab.addListener(_aplicarPestanaSolicitada);
+  }
+
+  void _aplicarPestanaSolicitada() {
+    final t = requestedHomeTab.value;
+    if (t != null && mounted) {
+      setState(() => _tab = t);
+      requestedHomeTab.value = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    requestedHomeTab.removeListener(_aplicarPestanaSolicitada);
+    super.dispose();
   }
 
   @override
