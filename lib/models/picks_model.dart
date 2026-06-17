@@ -3,10 +3,12 @@ class PickLeg {
   final String liga;
   final String deporte;
   final String enfrentamiento;
-  final String tipo;        // ganador | ponches | total | prop_nba
+  final String tipo;        // ganador | handicap | total | f5 | ponches | hit | prop_nba
   final String seleccion;
   final double probabilidad;
   final int confianza;
+  final String? razon;             // lectura del partido (solo núcleos)
+  final List<PickLeg> opcionales;  // refuerzos del mismo partido (solo núcleos)
 
   PickLeg({
     required this.matchId,
@@ -17,6 +19,8 @@ class PickLeg {
     required this.seleccion,
     required this.probabilidad,
     required this.confianza,
+    this.razon,
+    this.opcionales = const [],
   });
 
   factory PickLeg.fromJson(Map<String, dynamic> j) => PickLeg(
@@ -28,6 +32,10 @@ class PickLeg {
         seleccion: j['seleccion'] ?? '',
         probabilidad: (j['probabilidad'] as num?)?.toDouble() ?? 0,
         confianza: (j['confianza'] as num?)?.toInt() ?? 0,
+        razon: j['razon'],
+        opcionales: ((j['opcionales'] as List?) ?? [])
+            .map((e) => PickLeg.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   String get emoji {
@@ -60,6 +68,22 @@ class PickTier {
       );
 }
 
+/// Nivel del "Veredicto del Día" (El Veredicto / El Atrevido): patas + combinada.
+class VeredictoNivel {
+  final List<PickLeg> patas;
+  final double probabilidadCombinada;
+
+  VeredictoNivel({required this.patas, required this.probabilidadCombinada});
+
+  factory VeredictoNivel.fromJson(Map<String, dynamic>? j) => VeredictoNivel(
+        patas: (((j ?? {})['patas'] as List?) ?? [])
+            .map((e) => PickLeg.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        probabilidadCombinada:
+            ((j ?? {})['probabilidad_combinada'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 class PicksDelDia {
   final String fecha;
   final int juegosAnalizados;
@@ -74,6 +98,10 @@ class PicksDelDia {
   final PickTier dupleta;
   final PickTier tripleta;
   final PickTier pick7;
+  // "El Veredicto del Día" (estructura nueva)
+  final PickLeg? seguro;
+  final VeredictoNivel veredicto;
+  final VeredictoNivel atrevido;
 
   PicksDelDia({
     required this.fecha,
@@ -89,6 +117,9 @@ class PicksDelDia {
     required this.dupleta,
     required this.tripleta,
     required this.pick7,
+    this.seguro,
+    required this.veredicto,
+    required this.atrevido,
   });
 
   bool get esParcial => estado == 'parcial';
@@ -112,5 +143,10 @@ class PicksDelDia {
         dupleta: PickTier.fromJson(j['dupleta'] ?? {}),
         tripleta: PickTier.fromJson(j['tripleta'] ?? {}),
         pick7: PickTier.fromJson(j['pick_7'] ?? {}),
+        seguro: j['seguro'] != null
+            ? PickLeg.fromJson(j['seguro'] as Map<String, dynamic>)
+            : null,
+        veredicto: VeredictoNivel.fromJson(j['veredicto'] as Map<String, dynamic>?),
+        atrevido: VeredictoNivel.fromJson(j['atrevido'] as Map<String, dynamic>?),
       );
 }

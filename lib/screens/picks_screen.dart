@@ -164,17 +164,28 @@ class _PicksScreenState extends State<PicksScreen> {
                 'La jornada fuerte está activa — este es nuestro mejor pronóstico.'),
             const SizedBox(height: 14),
           ],
-          if (!hayPicks)
+          if (d.veredicto.patas.isNotEmpty) ...[
+            // ── "El Veredicto del Día" (estructura nueva) ──────────────────
+            if (d.seguro != null) ...[
+              _seguroCard(d.seguro!),
+              const SizedBox(height: 12),
+            ],
+            _nivelCard('EL VEREDICTO', '🎯', kAccent, d.veredicto,
+                'Tu pick estrella — a ganar, con refuerzos opcionales',
+                mostrarOpcionales: true),
+            if (d.atrevido.patas.length > d.veredicto.patas.length) ...[
+              const SizedBox(height: 12),
+              _nivelCard('EL ATREVIDO', '🚀', kGreen, d.atrevido,
+                  'Parley grande — alto premio, mezcla deportes',
+                  mostrarOpcionales: false),
+            ],
+          ] else if (!hayPicks)
             _mensajeFin('🤔', 'No hay jugadas de alta confianza ahora', d.mensajeHorario)
           else ...[
+            // Fallback: estructura anterior (por compatibilidad)
             if (d.fija.completo)
               _tierCard('LA FIJA', '⭐', kGold, d.fija,
                   'La jugada más segura del día'),
-            if (d.dupleta.completo) ...[
-              const SizedBox(height: 12),
-              _tierCard('DUPLETA', '🔗', kAccent3, d.dupleta,
-                  'Las 2 más fuertes combinadas'),
-            ],
             if (d.tripleta.completo) ...[
               const SizedBox(height: 12),
               _tierCard('TRIPLETA', '🔥', kAccent, d.tripleta,
@@ -185,9 +196,7 @@ class _PicksScreenState extends State<PicksScreen> {
               _tierCard(
                   d.pickMaxN >= 7 ? 'PICK DE 7' : 'COMBINADA DE ${d.pickMaxN}',
                   '💰', kGreen, d.pick7,
-                  d.pickMaxN >= 7
-                      ? 'Alto premio — la grande del día'
-                      : 'Combinada con los juegos disponibles ahora'),
+                  'Alto premio — la grande del día'),
             ],
           ],
         ],
@@ -362,6 +371,158 @@ class _PicksScreenState extends State<PicksScreen> {
           ),
         ]),
       );
+
+  // 🔒 El Seguro: la jugada más fija del día, destacada con su razón.
+  Widget _seguroCard(PickLeg s) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [kGold.withValues(alpha: 0.18), kSurface],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kGold.withValues(alpha: 0.5)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Text('🔒', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text('EL SEGURO', style: bebasNeue(20, color: kGold, letterSpacing: 1.5)),
+            const Spacer(),
+            Text('${s.probabilidad.toStringAsFixed(0)}%', style: bebasNeue(28, color: kGold)),
+          ]),
+          const SizedBox(height: 2),
+          Text('La jugada más fija del día', style: dmSans(10, color: kMuted)),
+          const SizedBox(height: 10),
+          Row(children: [
+            Text(s.emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(s.seleccion,
+                style: dmSans(15, color: kText, weight: FontWeight.w700))),
+          ]),
+          const SizedBox(height: 3),
+          Text('${s.enfrentamiento}  ·  ${s.liga}', style: dmSans(11, color: kMuted)),
+          if (s.razon != null && s.razon!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Icon(Icons.lightbulb_outline_rounded, size: 13, color: kGold),
+              const SizedBox(width: 5),
+              Expanded(child: Text(s.razon!,
+                  style: dmSans(11.5, color: kGold, weight: FontWeight.w500))),
+            ]),
+          ],
+        ]),
+      );
+
+  // Nivel (El Veredicto / El Atrevido): header con combinada + lista de núcleos.
+  Widget _nivelCard(String titulo, String emoji, Color color,
+      VeredictoNivel nivel, String sub, {required bool mostrarOpcionales}) {
+    if (nivel.patas.isEmpty) return const SizedBox.shrink();
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withValues(alpha: 0.18), Colors.transparent],
+              begin: Alignment.centerLeft, end: Alignment.centerRight,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+          ),
+          child: Row(children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(titulo, style: bebasNeue(20, color: color, letterSpacing: 1)),
+              Text(sub, style: dmSans(10, color: kMuted)),
+            ])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('${nivel.probabilidadCombinada.toStringAsFixed(0)}%',
+                  style: bebasNeue(24, color: color)),
+              Text('combinada', style: jetMono(8, color: kMuted, weight: FontWeight.w700)),
+            ]),
+          ]),
+        ),
+        Container(height: 1, color: kBorder),
+        ...nivel.patas.asMap().entries.map((e) =>
+            _nucleoTile(e.value, color, last: e.key == nivel.patas.length - 1,
+                mostrarOpcionales: mostrarOpcionales)),
+      ]),
+    );
+  }
+
+  // Una pata-núcleo: selección + enfrentamiento + lectura + refuerzos opcionales.
+  Widget _nucleoTile(PickLeg n, Color color,
+      {required bool last, required bool mostrarOpcionales}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        border: last ? null : const Border(bottom: BorderSide(color: kBorder)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text(n.emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(n.seleccion, style: dmSans(13.5, color: kText, weight: FontWeight.w700)),
+            Text('${n.enfrentamiento}  ·  ${n.liga}', style: dmSans(10, color: kMuted)),
+          ])),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: kGreen.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text('${n.probabilidad.toStringAsFixed(0)}%',
+                style: jetMono(12, color: kGreen, weight: FontWeight.w700)),
+          ),
+        ]),
+        if (n.razon != null && n.razon!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const SizedBox(width: 26),
+            const Icon(Icons.lightbulb_outline_rounded, size: 12, color: kMuted),
+            const SizedBox(width: 5),
+            Expanded(child: Text(n.razon!,
+                style: dmSans(11, color: kMuted, weight: FontWeight.w500))),
+          ]),
+        ],
+        if (mostrarOpcionales && n.opcionales.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            margin: const EdgeInsets.only(left: 26),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('REFUERZOS OPCIONALES', style: jetMono(8, color: color, weight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              ...n.opcionales.map((o) => Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Row(children: [
+                      const Text('➕ ', style: TextStyle(fontSize: 11)),
+                      Expanded(child: Text(o.seleccion,
+                          style: dmSans(11.5, color: kText))),
+                      const SizedBox(width: 6),
+                      Text('${o.probabilidad.toStringAsFixed(0)}%',
+                          style: jetMono(10, color: kMuted, weight: FontWeight.w700)),
+                    ]),
+                  )),
+            ]),
+          ),
+        ],
+      ]),
+    );
+  }
 
   Widget _tierCard(String titulo, String emoji, Color color, PickTier tier, String sub) {
     if (tier.jugadas.isEmpty) return const SizedBox.shrink();
